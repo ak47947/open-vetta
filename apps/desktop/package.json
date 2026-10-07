@@ -1,8 +1,8 @@
 {
 	"name": "@vetta/desktop",
 	"version": "0.5.60",
-	"description": "Vetta Desktop App",
-	"author": "Vetta",
+	"description": "Atrix Desktop App",
+	"author": "Atrix",
 	"type": "module",
 	"private": true,
 	"main": "dist/main/index.js",

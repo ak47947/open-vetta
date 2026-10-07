@@ -163,7 +163,7 @@ export const AssistantMessage = memo(function AssistantMessage({
 								<BotAvatar active={isCurrentlyStreaming} />
 							)}
 						</MessageLayout.HeaderLeading>
-						<Message.Author>{participant?.name ?? "Vetta"}</Message.Author>
+						<Message.Author>{participant?.name ?? "Atrix"}</Message.Author>
 						{message.timestamp ? <Message.Meta>{formatTime(message.timestamp)}</Message.Meta> : null}
 						{durationAvailable ? (
 							<>
