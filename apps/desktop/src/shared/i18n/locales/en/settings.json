@@ -1459,7 +1459,7 @@
       "knowledge": "e.g. Enable knowledge processing every 10 minutes…",
       "knowledgeBase": "e.g. Create a knowledge base and import a local folder…",
       "batchTasks": "e.g. Create a batch project that runs on multiple folders…",
-      "automation": "e.g. Every weekday at 9am, run a morning brief in the openvetta project and ping Feishu if it fails…",
+      "automation": "e.g. Every weekday at 9am, run a morning brief in the atrix project and ping Feishu if it fails…",
       "im": "e.g. Enable Claw and set up Feishu…",
       "webhook": "e.g. Add a channel that notifies me when a task finishes…",
       "appearance": "e.g. Switch to dark mode and use the stoat cursor…",

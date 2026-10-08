@@ -157,7 +157,7 @@ export function createVettaImageProvider(
 					status: "failed",
 					error: {
 						code: "operation-unsupported",
-						message: `Vetta image provider does not support ${input.operation}`,
+						message: `Atrix image provider does not support ${input.operation}`,
 						retryable: false,
 					},
 				});

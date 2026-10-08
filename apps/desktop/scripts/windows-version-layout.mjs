@@ -42,11 +42,13 @@ export async function createWindowsVersionLayout(appOutDir, version, launcherPat
 	const versionDir = join(versionsDir, version);
 	await mkdir(versionDir, { recursive: true });
 
+	const targetExeName = entries.includes("Atrix.exe") ? "Atrix.exe" : entries.includes("Vetta.exe") ? "Vetta.exe" : "Atrix.exe";
+
 	for (const entry of entries) {
-		if (entry === "versions" || entry === "VettaLauncher.exe") continue;
+		if (entry === "versions" || entry === "VettaLauncher.exe" || entry === "AtrixLauncher.exe") continue;
 		await renameWithRetry(join(appOutDir, entry), join(versionDir, entry));
 	}
-	await renameWithRetry(launcherPath, join(appOutDir, "Vetta.exe"));
+	await renameWithRetry(launcherPath, join(appOutDir, targetExeName));
 	// NSIS adds elevate.exe after afterPack, so its destination directory must
 	// remain present even though the Electron resources live under versions/.
 	await mkdir(join(appOutDir, "resources"), { recursive: true });

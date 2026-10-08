@@ -79,6 +79,7 @@ vi.mock("../src/export/export-design", () => ({ exportDesign: vi.fn() }));
 vi.mock("../src/canvas/cover-compose", () => ({ refreshCover: () => Promise.resolve() }));
 vi.mock("../src/canvas/design-runtime", () => ({
 	clearFrameActivity: vi.fn(),
+	onPendingDesignPath: () => () => {},
 	setCanvasController: mocks.setCanvasController,
 	setPendingDesignPath: vi.fn(),
 	takePendingDesignPath: () => null,

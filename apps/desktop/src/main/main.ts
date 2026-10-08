@@ -514,7 +514,7 @@ if (!gotSingleLock) {
 		if (!app.isPackaged) {
 			const appVersion = getAppVersion();
 			app.setAboutPanelOptions({
-				applicationName: "Vetta",
+				applicationName: "Atrix",
 				applicationVersion: appVersion,
 				version: "",
 			});
