@@ -254,6 +254,37 @@ func newBoundTransport(t *testing.T) (*Transport, *fakeILink, string) {
 	return tr, fake, statePath
 }
 
+// startTransportLoop launches tr's poll loop in the background and returns a
+// stop function that cancels the loop and waits for it to exit. The same stop
+// function is registered via t.Cleanup, so it runs before the t.TempDir
+// removal installed by newBoundTransport (cleanups run LIFO).
+//
+// The join is load-bearing, not hygiene: Start persists the long-poll cursor
+// into the state file after every successful getupdates, and Stop only cancels
+// the context without waiting for the loop. A save still in flight when
+// T.TempDir cleans up re-creates the state directory (saveLocked MkdirAlls it),
+// so RemoveAll fails with "directory not empty" even though every assertion in
+// the test already passed.
+func startTransportLoop(t *testing.T, tr *Transport, h transport.MessageHandler) func() {
+	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	exited := make(chan struct{})
+	go func() {
+		defer close(exited)
+		_ = tr.Start(ctx, h)
+	}()
+	stop := func() {
+		cancel()
+		select {
+		case <-exited:
+		case <-time.After(2 * time.Second):
+			t.Error("transport did not stop within 2s")
+		}
+	}
+	t.Cleanup(stop)
+	return stop
+}
+
 // =============================================================================
 // tests
 // =============================================================================
@@ -339,9 +370,7 @@ func TestTransport_DropsNonTextAndEmptyFromUserID(t *testing.T) {
 	)
 
 	h := newCaptureHandler()
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	go tr.Start(ctx, h) //nolint:errcheck
+	startTransportLoop(t, tr, h)
 
 	h.wait(t, 1)
 	got := h.snapshot()
@@ -364,9 +393,7 @@ func TestTransport_VoiceWithSTTFallback(t *testing.T) {
 	})
 
 	h := newCaptureHandler()
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	go tr.Start(ctx, h) //nolint:errcheck
+	startTransportLoop(t, tr, h)
 
 	h.wait(t, 1)
 	if got := h.snapshot()[0].Text; got != "transcribed audio" {
@@ -392,9 +419,7 @@ func TestTransport_QuotedReplyFormatting(t *testing.T) {
 	})
 
 	h := newCaptureHandler()
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	go tr.Start(ctx, h) //nolint:errcheck
+	startTransportLoop(t, tr, h)
 
 	h.wait(t, 1)
 	got := h.snapshot()[0].Text
@@ -418,13 +443,11 @@ func TestTransport_SendMessageUsesContextTokenAndIncrementsQuota(t *testing.T) {
 	})
 
 	h := newCaptureHandler()
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	go tr.Start(ctx, h) //nolint:errcheck
+	startTransportLoop(t, tr, h)
 
 	h.wait(t, 1)
 
-	id, err := tr.SendMessage(ctx, "frank", transport.OutboundMessage{Text: "pong"})
+	id, err := tr.SendMessage(t.Context(), "frank", transport.OutboundMessage{Text: "pong"})
 	if err != nil {
 		t.Fatalf("SendMessage: %v", err)
 	}
@@ -562,14 +585,12 @@ func TestTransport_CursorPersisted(t *testing.T) {
 	})
 
 	h := newCaptureHandler()
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	go tr.Start(ctx, h) //nolint:errcheck
+	stop := startTransportLoop(t, tr, h)
 	h.wait(t, 1)
 
 	// Wait one more loop iter so the post-dispatch cursor save lands.
 	time.Sleep(150 * time.Millisecond)
-	cancel()
+	stop()
 
 	// Reopen and confirm the cursor was persisted.
 	store, err := newStateStore(statePath)
