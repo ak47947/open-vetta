@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -66,8 +67,9 @@ export async function verifyInnoUpdate({ installerPath, verificationManifestPath
 	const installedVersionDir = join(storeRoot, "versions", version);
 	try {
 		await runInstaller(installerPath, storeRoot, version);
+		const appExeName = existsSync(join(installedVersionDir, "Atrix.exe")) ? "Atrix.exe" : "Vetta.exe";
 		await Promise.all([
-			assertFile(join(installedVersionDir, "Vetta.exe")),
+			assertFile(join(installedVersionDir, appExeName)),
 			assertFile(join(installedVersionDir, "resources", "app.asar")),
 			assertFile(join(installedVersionDir, ".install-complete")),
 		]);

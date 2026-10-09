@@ -145,7 +145,11 @@ export async function collectArtifacts(directory = releaseDir) {
 	}
 	if (releaseVersions.size === 1) {
 		const [releaseVersion] = releaseVersions;
-		for (const fileName of windowsSupplementalArtifactNames(releaseVersion)) {
+		const supplementalCandidates = [
+			...windowsSupplementalArtifactNames(releaseVersion, "Atrix"),
+			...windowsSupplementalArtifactNames(releaseVersion, "Vetta"),
+		];
+		for (const fileName of supplementalCandidates) {
 			if (availableFiles.has(fileName)) artifacts.add(fileName);
 		}
 	}

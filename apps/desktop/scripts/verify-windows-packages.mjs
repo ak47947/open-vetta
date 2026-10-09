@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -35,15 +36,33 @@ async function isValidLayoutRoot(root, expectedVersion) {
 	try {
 		const manifest = JSON.parse(await readFile(join(root, "current.json"), "utf8"));
 		if (manifest?.version !== expectedVersion) return false;
+		const launcherPath = [join(root, "Atrix.exe"), join(root, "Vetta.exe")].find((candidate) =>
+			existsSync(candidate),
+		);
+		const appPath = [
+			join(root, "versions", expectedVersion, "Atrix.exe"),
+			join(root, "versions", expectedVersion, "Vetta.exe"),
+		].find((candidate) => existsSync(candidate));
+		if (!launcherPath || !appPath) return false;
 		await Promise.all([
-			assertNonEmptyFile(join(root, "Vetta.exe")),
-			assertNonEmptyFile(join(root, "versions", expectedVersion, "Vetta.exe")),
+			assertNonEmptyFile(launcherPath),
+			assertNonEmptyFile(appPath),
 			assertNonEmptyFile(join(root, "versions", expectedVersion, "resources", "app.asar")),
 		]);
 		return true;
 	} catch {
 		return false;
 	}
+}
+
+export function resolveSupplementalArtifactNames(releaseDir, expectedVersion) {
+	for (const productName of ["Atrix", "Vetta"]) {
+		const names = windowsSupplementalArtifactNames(expectedVersion, productName);
+		if (existsSync(join(releaseDir, names[0])) && existsSync(join(releaseDir, names[1]))) {
+			return names;
+		}
+	}
+	return windowsSupplementalArtifactNames(expectedVersion, "Atrix");
 }
 
 export async function verifyExtractedWindowsLayout(root, expectedVersion) {
@@ -90,7 +109,7 @@ export async function verifyWindowsPackages({ releaseDir = defaultReleaseDir } =
 		throw new Error("[verify-windows-packages] native Windows package verification must run on Windows");
 	}
 	const expectedVersion = await readExpectedWindowsVersion(releaseDir);
-	const [msiFileName, zipFileName] = windowsSupplementalArtifactNames(expectedVersion);
+	const [msiFileName, zipFileName] = resolveSupplementalArtifactNames(releaseDir, expectedVersion);
 	const msiPath = join(releaseDir, msiFileName);
 	const zipPath = join(releaseDir, zipFileName);
 	await Promise.all([assertNonEmptyFile(msiPath), assertNonEmptyFile(zipPath)]);

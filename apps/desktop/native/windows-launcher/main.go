@@ -9,7 +9,7 @@ import (
 	"regexp"
 )
 
-const executableName = "Vetta.exe"
+const defaultExecutableName = "Atrix.exe"
 
 var versionPattern = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$`)
 
@@ -41,20 +41,27 @@ func readPointer(path string) (versionPointer, error) {
 	return pointer, nil
 }
 
-func executableForVersion(root string, version string) string {
-	return filepath.Join(root, "versions", version, executableName)
-}
-
-func existingExecutable(root string, version string) string {
+func findExecutable(root string, version string) string {
 	if !isValidVersion(version) {
 		return ""
 	}
-	target := executableForVersion(root, version)
-	info, err := os.Stat(target)
-	if err != nil || info.IsDir() {
-		return ""
+	versionDir := filepath.Join(root, "versions", version)
+	candidates := []string{"Atrix.exe", "Vetta.exe"}
+	for _, name := range candidates {
+		target := filepath.Join(versionDir, name)
+		if info, err := os.Stat(target); err == nil && !info.IsDir() {
+			return target
+		}
 	}
-	return target
+	return ""
+}
+
+func executableForVersion(root string, version string) string {
+	return filepath.Join(root, "versions", version, defaultExecutableName)
+}
+
+func existingExecutable(root string, version string) string {
+	return findExecutable(root, version)
 }
 
 func writePointer(path string, pointer versionPointer) {
@@ -110,8 +117,17 @@ func main() {
 		return
 	}
 	installRoot := filepath.Dir(launcherPath)
-	localRoot := filepath.Join(localAppData, "Vetta")
-	target := resolveLaunchTarget(installRoot, localRoot)
+	localRoots := []string{
+		filepath.Join(localAppData, "Atrix"),
+		filepath.Join(localAppData, "Vetta"),
+	}
+	var target string
+	for _, localRoot := range localRoots {
+		target = resolveLaunchTarget(installRoot, localRoot)
+		if target != "" {
+			break
+		}
+	}
 	if target == "" {
 		return
 	}

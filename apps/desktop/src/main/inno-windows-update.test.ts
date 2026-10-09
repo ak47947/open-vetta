@@ -303,14 +303,17 @@ describe("InnoWindowsUpdateController", () => {
 
 describe("Windows Inno update paths", () => {
 	it("recognizes only executables inside the matching version directory", () => {
+		expect(isVersionedWindowsExecutable("C:\\Atrix\\versions\\1.2.3\\Atrix.exe", "1.2.3")).toBe(true);
 		expect(isVersionedWindowsExecutable("C:\\Vetta\\versions\\1.2.3\\Vetta.exe", "1.2.3")).toBe(true);
+		expect(isVersionedWindowsExecutable("C:\\Atrix\\Atrix.exe", "1.2.3")).toBe(false);
 		expect(isVersionedWindowsExecutable("C:\\Vetta\\Vetta.exe", "1.2.3")).toBe(false);
+		expect(isVersionedWindowsExecutable("C:\\Atrix\\versions\\1.2.2\\Atrix.exe", "1.2.3")).toBe(false);
 		expect(isVersionedWindowsExecutable("C:\\Vetta\\versions\\1.2.2\\Vetta.exe", "1.2.3")).toBe(false);
 	});
 
 	it("uses the stable per-user application root", () => {
 		expect(resolveInnoUpdateStoreRoot("C:\\Users\\test\\AppData\\Local")).toBe(
-			"C:\\Users\\test\\AppData\\Local\\Vetta",
+			"C:\\Users\\test\\AppData\\Local\\Atrix",
 		);
 	});
 

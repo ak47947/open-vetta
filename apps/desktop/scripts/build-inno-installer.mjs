@@ -85,7 +85,11 @@ async function main() {
 	if (typeof version !== "string" || !/^\d+\.\d+\.\d+$/.test(version)) {
 		throw new Error(`[build-inno] invalid staged version: ${version}`);
 	}
-	if (!existsSync(join(sourceDir, "versions", version, "Vetta.exe"))) {
+	const productName = builderConfig.productName || "Atrix";
+	const executableName = builderConfig.executableName || productName;
+	const candidateExes = [`${executableName}.exe`, "Atrix.exe", "Vetta.exe"];
+	const foundExe = candidateExes.find((candidate) => existsSync(join(sourceDir, "versions", version, candidate)));
+	if (!foundExe) {
 		throw new Error(`[build-inno] versioned Electron output not found: ${sourceDir}`);
 	}
 
@@ -94,7 +98,7 @@ async function main() {
 	if (publishConfig) {
 		console.log(`[build-inno] wrote app-update.yml for ${publishConfig.provider}`);
 	}
-	const fileName = `Vetta-${version}-win-${arch}.exe`;
+	const fileName = `${productName}-${version}-win-${arch}.exe`;
 	const verificationManifestPath = join(releaseDir, `${fileName}.files.json`);
 	await writeInnoVerificationManifest(join(sourceDir, "versions", version), verificationManifestPath, version);
 

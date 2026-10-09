@@ -22,6 +22,8 @@ function resolveWindowsVersionedBinary(unpackedRoot) {
 	) {
 		throw new Error(`Windows packaged E2E has an invalid version pointer: ${String(version)}`);
 	}
+	const atrixPath = join(unpackedRoot, "versions", version, "Atrix.exe");
+	if (existsSync(atrixPath)) return atrixPath;
 	return join(unpackedRoot, "versions", version, "Vetta.exe");
 }
 
@@ -65,12 +67,18 @@ export function resolvePackagedE2eBinaryPath(packageRoot, platform = process.pla
 			? [resolveWindowsVersionedBinary(join(releaseRoot, "win-unpacked"))]
 			: platform === "darwin"
 				? [
+						join(releaseRoot, "mac-arm64", "Atrix.app", "Contents", "MacOS", "Atrix"),
+						join(releaseRoot, "mac", "Atrix.app", "Contents", "MacOS", "Atrix"),
+						join(releaseRoot, "mac-x64", "Atrix.app", "Contents", "MacOS", "Atrix"),
 						join(releaseRoot, "mac-arm64", "Vetta.app", "Contents", "MacOS", "Vetta"),
 						join(releaseRoot, "mac", "Vetta.app", "Contents", "MacOS", "Vetta"),
 						join(releaseRoot, "mac-x64", "Vetta.app", "Contents", "MacOS", "Vetta"),
 					]
 				: platform === "linux"
-					? [join(releaseRoot, "linux-unpacked", "Vetta")]
+					? [
+							join(releaseRoot, "linux-unpacked", "Atrix"),
+							join(releaseRoot, "linux-unpacked", "Vetta"),
+						]
 					: [];
 
 	const found = candidates.find((candidate) => existsSync(candidate));

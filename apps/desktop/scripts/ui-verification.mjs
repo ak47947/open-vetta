@@ -136,7 +136,7 @@ async function inspectCdp(endpoint) {
 			(target) => typeof target.url === "string" && target.url.startsWith("devtools://"),
 		).length;
 		const mainWindow =
-			pages.find((target) => target.title === "Vetta Desktop") ??
+			pages.find((target) => target.title === "Atrix Desktop" || target.title === "Vetta Desktop") ??
 			pages.find((target) => typeof target.url === "string" && target.url.startsWith("http")) ??
 			null;
 		return {
@@ -305,11 +305,15 @@ function selectMainWindow(layout, uiInfo) {
 	const mainWindowUrl = uiInfo.mainWindow?.url;
 	const matchingLine = tabListResult.stdout
 		.split(/\r?\n/)
-		.find((line) => line.includes("[Vetta Desktop](") && (!mainWindowUrl || line.includes(mainWindowUrl)));
+		.find(
+			(line) =>
+				(line.includes("[Atrix Desktop](") || line.includes("[Vetta Desktop](")) &&
+				(!mainWindowUrl || line.includes(mainWindowUrl)),
+		);
 	const index = matchingLine?.match(/^- (\d+):/)?.[1];
-	if (index === undefined) throw new Error("Unable to find the Vetta Desktop renderer tab");
+	if (index === undefined) throw new Error("Unable to find the Atrix Desktop renderer tab");
 	const selectResult = runPlaywright(layout, ["tab-select", index]);
-	if (selectResult.status !== 0) throw new Error("Unable to select the Vetta Desktop renderer tab");
+	if (selectResult.status !== 0) throw new Error("Unable to select the Atrix Desktop renderer tab");
 }
 
 function prepareProfile(layout, sync = false) {
