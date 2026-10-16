@@ -1,13 +1,13 @@
 ---
 name: publish-ability
-description: Publish a skill, scene, MCP server, plugin, or bundle to the Vetta ability marketplace. Use when the user asks to upload/publish/submit an ability, put a plugin on the marketplace, share a skill with other users, or migrate an existing package into Vetta.
+description: Publish a skill, scene, MCP server, plugin, or bundle to the Atrix ability marketplace. Use when the user asks to upload/publish/submit an ability, put a plugin on the marketplace, share a skill with other users, or migrate an existing package into Atrix.
 metadata:
   version: 2.1.0
-  author: Vetta
+  author: Atrix
   category: 开发
 ---
 
-# Publish an Ability to the Vetta Marketplace
+# Publish an Ability to the Atrix Marketplace
 
 Submitting is a **local** action: it reads an archive from the user's disk, so it runs through
 the bundled script rather than a tool call.
@@ -27,7 +27,7 @@ the built-in `vetta` MCP server. It is always available and needs no setup.
    | --- | --- | --- |
    | `skill` | A `SKILL.md` workflow | `.zip` / `.tar.gz` containing `SKILL.md` |
    | `scene` | A skill installed into the scene directory | same as `skill` |
-   | `plugin` | A Vetta plugin | `.zip` containing `plugin.json` |
+   | `plugin` | An Atrix plugin | `.zip` containing `plugin.json` |
    | `mcp` | One entry in the user's `mcp.json` | none — config only |
    | `bundle` | A named group of already-published abilities | none — references only |
 
@@ -96,7 +96,7 @@ the built-in `vetta` MCP server. It is always available and needs no setup.
 - Input may also arrive on stdin (`cat payload.json | node .../publish.mjs`) if that is more
   convenient than a temp file.
 - The script reads the login token from `~/.vetta/auth.json` itself. If it reports "未登录", tell
-  the user to log in through the Vetta client — do not attempt to pass credentials yourself.
+  the user to log in through the Atrix client — do not attempt to pass credentials yourself.
 
 ## Review
 

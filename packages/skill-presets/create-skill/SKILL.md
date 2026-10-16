@@ -1,11 +1,11 @@
 ---
 name: create-skill
-description: Create or update Vetta-compatible Agent Skills. Use when the user asks to create a skill, add a SKILL.md workflow, register a skill in skills-manifest.json, package a skill in a Vetta plugin, or add a built-in Vetta skill preset.
+description: Create or update Atrix-compatible Agent Skills. Use when the user asks to create a skill, add a SKILL.md workflow, register a skill in skills-manifest.json, package a skill in an Atrix plugin, or add a built-in Atrix skill preset.
 ---
 
-# Create a Vetta Skill
+# Create an Atrix Skill
 
-Create focused Agent Skills that Vetta can execute and display. Treat the Skill files and their registration metadata as one change.
+Create focused Agent Skills that Atrix can execute and display. Treat the Skill files and their registration metadata as one change.
 
 ## Choose the target
 
@@ -13,12 +13,12 @@ Infer the target from the request. If it is ambiguous, ask the user to choose be
 
 | Target | Skill directory | Required registration |
 | --- | --- | --- |
-| Global Vetta product skill | `~/.vetta/skills/<skill-name>/` | Update `~/.vetta/skills-manifest.json`. |
+| Global Atrix product skill | `~/.vetta/skills/<skill-name>/` | Update `~/.vetta/skills-manifest.json`. |
 | Project skill | `<project-root>/.vetta/skills/<skill-name>/` | No global manifest entry; project discovery is directory-based. |
 | Plugin skill | `<plugin-root>/agent/skills/<skill-name>/` | Update `plugin.json` under `agent.skillPaths`. |
 | Built-in Desktop skill | `<vetta-mono>/packages/skill-presets/<skill-name>/` | Update `<vetta-mono>/packages/skill-presets/skills-manifest.json`. |
 
-Do not place a global product Skill only in `~/.vetta/agent/skills`; that directory is Agent-compatible but does not provide the Vetta product registration metadata required by the Skills UI.
+Do not place a global product Skill only in `~/.vetta/agent/skills`; that directory is Agent-compatible but does not provide the Atrix product registration metadata required by the Skills UI.
 
 ## Understand the directory protection
 
@@ -48,7 +48,7 @@ description: Describe what the Skill does and the user requests that should trig
 Concise workflow instructions.
 ```
 
-## Register a global Vetta Skill
+## Register a global Atrix Skill
 
 Read the full `~/.vetta/skills-manifest.json` before editing it. The file is a root-level JSON object keyed by Skill name. Preserve every existing entry and add or update only the target Skill.
 

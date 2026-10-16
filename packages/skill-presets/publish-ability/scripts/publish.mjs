@@ -111,7 +111,7 @@ async function main() {
 
 	const credentials = loadCredentials();
 	if (!credentials) {
-		fail("未登录：读不到 ~/.vetta/auth.json。请先在 Vetta 客户端登录后重试。");
+		fail("未登录：读不到 ~/.vetta/auth.json。请先在 Atrix 客户端登录后重试。");
 	}
 
 	const form = new FormData();
@@ -144,7 +144,7 @@ async function main() {
 			body: form,
 		});
 	} catch (error) {
-		fail(`无法连接 Vetta 服务（${credentials.baseUrl}）：${error.message}`);
+		fail(`无法连接 Atrix 服务（${credentials.baseUrl}）：${error.message}`);
 	}
 
 	const text = await response.text();

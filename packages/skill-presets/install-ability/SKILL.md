@@ -1,15 +1,15 @@
 ---
 name: install-ability
-description: 在本机 Vetta 中安装能力——插件（plugin）、Skill/场景（scene）与 MCP 服务器。用户说「装一个插件 / install plugin / 从能力市场安装 / 加一个 MCP server / 配置 MCP / 装个 skill」，或插件装完没生效、需要 reload、pending 版本没应用时使用。不用于安装 npm 依赖、IDE 插件、浏览器扩展，也不用于开发插件（那是 plugin-workbench）或创作 Skill（那是 create-skill）。
+description: 在本机 Atrix 中安装能力——插件（plugin）、Skill/场景（scene）与 MCP 服务器。用户说「装一个插件 / install plugin / 从能力市场安装 / 加一个 MCP server / 配置 MCP / 装个 skill」，或插件装完没生效、需要 reload、pending 版本没应用时使用。不用于安装 npm 依赖、IDE 插件、浏览器扩展，也不用于开发插件（那是 plugin-workbench）或创作 Skill（那是 create-skill）。
 metadata:
   version: 1.0.0
-  author: Vetta
+  author: Atrix
   category: 开发
 ---
 
-# 在 Vetta 中安装能力
+# 在 Atrix 中安装能力
 
-Vetta 的能力分三种，安装路径互不相同。**先分类，再动手**。
+Atrix 的能力分三种，安装路径互不相同。**先分类，再动手**。
 
 | 用户给的东西 | 类型 | 安装路径 |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ Vetta 的能力分三种，安装路径互不相同。**先分类，再动手**�
 | 用户自己写的 / 仓库里的 SKILL.md | Skill / 场景 | 交给 `create-skill` skill（§3.2） |
 | `command` + `args`，或一个 MCP 的 http url | MCP | `mcp.manage upsert`（§4） |
 
-分不清时**先问用户**，不要凭包名猜类型：npm 上的 `@modelcontextprotocol/server-*` 是 MCP，不是 Vetta 插件。
+分不清时**先问用户**，不要凭包名猜类型：npm 上的 `@modelcontextprotocol/server-*` 是 MCP，不是 Atrix 插件。
 
 ## 1. 通用前置
 
@@ -87,11 +87,11 @@ plugins.manage {"operation":"install-from-url","url":"https://…/x.zip"}
 plugins.manage {"operation":"reload","id":"<plugin-id>"}
 ```
 
-本地路径安装用 `install-from-path`（zip 绝对路径 + `"enable": true`）。若目标是「制作插件」工作台里的工程，改为引导用户点面板的「应用到 Vetta」，那条路径不弹确认。
+本地路径安装用 `install-from-path`（zip 绝对路径 + `"enable": true`）。若目标是「制作插件」工作台里的工程，改为引导用户点面板的「应用到 Atrix」，那条路径不弹确认。
 
 ### 2.5 退出码
 
-`0` 成功 · `2` 参数错 · `3` 连不上宿主（Vetta 没运行，或 `VETTA_CONFIG_DIR`/`VETTA_HOME` 指到了别的环境）· `4` 宿主拒绝（权限、id 冲突、系统插件不可覆盖）· `5` 其它失败。遇到 `3` 先让用户确认 Vetta 桌面端在前台运行，不要反复重试。
+`0` 成功 · `2` 参数错 · `3` 连不上宿主（Atrix 没运行，或 `VETTA_CONFIG_DIR`/`VETTA_HOME` 指到了别的环境）· `4` 宿主拒绝（权限、id 冲突、系统插件不可覆盖）· `5` 其它失败。遇到 `3` 先让用户确认 Atrix 桌面端在前台运行，不要反复重试。
 
 ### 2.6 能力市场里的插件
 
