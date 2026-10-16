@@ -43,7 +43,7 @@ export function resolveThemeMode(mode: ThemeMode): ResolvedMode {
 }
 
 export function applyStoredTheme(): void {
-	const mode = (localStorage.getItem(MODE_STORAGE_KEY) as ThemeMode | null) ?? "dark";
+	const mode = (localStorage.getItem(MODE_STORAGE_KEY) as ThemeMode | null) ?? "light";
 	const rawThemeId = localStorage.getItem(THEME_STORAGE_KEY) ?? DEFAULT_THEME_ID;
 	const themeId = resolveThemeId(rawThemeId);
 	if (themeId !== rawThemeId) {

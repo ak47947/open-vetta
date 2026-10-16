@@ -27,7 +27,7 @@ function getThemeSnapshot(): DesktopThemeSnapshot {
 	const root = document.documentElement;
 	const resolvedMode = root.getAttribute("data-mode");
 	return {
-		mode: storedMode === "light" || storedMode === "dark" || storedMode === "auto" ? storedMode : "dark",
+		mode: storedMode === "light" || storedMode === "dark" || storedMode === "auto" ? storedMode : "light",
 		themeId: resolveThemeId(storedThemeId && storedThemeId.length > 0 ? storedThemeId : DEFAULT_THEME_ID),
 		resolved: resolvedMode === "light" || resolvedMode === "dark" ? resolvedMode : null,
 		appliedThemeId: root.getAttribute("data-theme"),
@@ -79,7 +79,7 @@ export function useThemeActions(): ThemeActions {
 			const resolved =
 				appliedMode === "light" || appliedMode === "dark"
 					? appliedMode
-					: resolveThemeMode((localStorage.getItem(MODE_STORAGE_KEY) as ThemeMode | null) ?? "dark");
+					: resolveThemeMode((localStorage.getItem(MODE_STORAGE_KEY) as ThemeMode | null) ?? "light");
 			localStorage.setItem(THEME_STORAGE_KEY, nextName);
 			withThemeTransition(() => {
 				setThemeNameAtom(nextName);
@@ -142,7 +142,7 @@ export function useThemeController(): void {
 	// 监听原生主题变化（auto 模式下才响应）。
 	useEffect(() => {
 		const unsubscribe = window.vetta.theme.onNativeChanged((info) => {
-			const current = (localStorage.getItem(MODE_STORAGE_KEY) as ThemeMode | null) ?? "dark";
+			const current = (localStorage.getItem(MODE_STORAGE_KEY) as ThemeMode | null) ?? "light";
 			if (current !== "auto") return;
 			const r: ResolvedMode = info.shouldUseDarkColors ? "dark" : "light";
 			const currentTheme = resolveThemeId(localStorage.getItem(THEME_STORAGE_KEY) ?? DEFAULT_THEME_ID);

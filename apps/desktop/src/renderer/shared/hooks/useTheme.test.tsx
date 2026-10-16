@@ -9,6 +9,7 @@ vi.mock("@shared/i18n", () => ({
 
 const { useTheme, useThemeActions } = await import("./useTheme.js");
 const { ThemeController } = await import("../theme/ThemeController.js");
+const { applyInitialTheme } = await import("../theme/apply.js");
 
 function installThemeApi(setNativeTheme: ReturnType<typeof vi.fn>): void {
 	const subscribe = vi.fn(() => vi.fn());
@@ -30,7 +31,7 @@ function installThemeApi(setNativeTheme: ReturnType<typeof vi.fn>): void {
 
 function ModeHarness(): JSX.Element {
 	const { mode, setMode } = useTheme();
-	return <button onClick={() => void setMode("light")}>{mode}</button>;
+	return <button onClick={() => void setMode("dark")}>{mode}</button>;
 }
 
 describe("useTheme", () => {
@@ -57,11 +58,24 @@ describe("useTheme", () => {
 		});
 	});
 
+	it("在未设置本地存储时默认采用亮色模式", () => {
+		installThemeApi(vi.fn(async () => {}));
+		applyInitialTheme();
+		render(
+			<Provider store={createStore()}>
+				<ThemeController />
+				<ModeHarness />
+			</Provider>,
+		);
+		expect(screen.getByRole("button", { name: "light" })).toBeTruthy();
+		expect(document.documentElement.getAttribute("data-mode")).toBe("light");
+	});
+
 	it("用户切换明暗模式时先更新页面，再异步同步原生窗口主题", () => {
 		let finishNativeSync: (() => void) | undefined;
 		const setNativeTheme = vi.fn(
 			(mode: string) =>
-				mode === "light"
+				mode === "dark"
 					? new Promise<void>((resolve) => {
 							finishNativeSync = resolve;
 						})
@@ -77,11 +91,11 @@ describe("useTheme", () => {
 		);
 		setNativeTheme.mockClear();
 
-		fireEvent.click(screen.getByRole("button", { name: "dark" }));
+		fireEvent.click(screen.getByRole("button", { name: "light" }));
 
-		expect(screen.getByRole("button", { name: "light" })).toBeTruthy();
-		expect(document.documentElement.getAttribute("data-mode")).toBe("light");
-		expect(setNativeTheme).toHaveBeenCalledWith("light");
+		expect(screen.getByRole("button", { name: "dark" })).toBeTruthy();
+		expect(document.documentElement.getAttribute("data-mode")).toBe("dark");
+		expect(setNativeTheme).toHaveBeenCalledWith("dark");
 		expect(finishNativeSync).toBeTypeOf("function");
 	});
 

@@ -72,8 +72,8 @@ export type SettingsTab =
 // ─── Theme ───
 
 export type ThemeMode = "light" | "dark" | "auto";
-export const themeModeAtom = atom<ThemeMode>((localStorage.getItem("vetta-theme") as ThemeMode) || "dark");
-export const resolvedThemeAtom = atom<"light" | "dark">("dark");
+export const themeModeAtom = atom<ThemeMode>((localStorage.getItem("vetta-theme") as ThemeMode) || "light");
+export const resolvedThemeAtom = atom<"light" | "dark">("light");
 export const themeNameAtom = atom<string>(
 	resolveThemeId(localStorage.getItem("vetta-color-theme") || DEFAULT_THEME_ID),
 );
