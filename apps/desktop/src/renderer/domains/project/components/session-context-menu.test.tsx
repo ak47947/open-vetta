@@ -61,7 +61,7 @@ describe("SessionContextMenuView", () => {
 		expect(onOpenInFolder).toHaveBeenCalledOnce();
 	});
 
-	it("renders the tag submenu contents when extra items are supplied", () => {
+	it("renders the tag submenu contents when extra items are supplied", async () => {
 		const onAssign = vi.fn();
 		render(
 			<SessionContextMenuView
@@ -90,8 +90,11 @@ describe("SessionContextMenuView", () => {
 			/>,
 		);
 
-		expect(screen.getByRole("menuitem", { name: "Tags" })).toBeTruthy();
-		fireEvent.click(screen.getByRole("menuitem", { name: "Urgent" }));
+		const tagsTrigger = screen.getByRole("menuitem", { name: "Tags" });
+		expect(tagsTrigger).toBeTruthy();
+		fireEvent.pointerMove(tagsTrigger);
+		fireEvent.keyDown(tagsTrigger, { key: "ArrowRight" });
+		fireEvent.click(await screen.findByRole("menuitem", { name: "Urgent" }));
 		expect(onAssign).toHaveBeenCalledOnce();
 	});
 

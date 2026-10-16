@@ -531,6 +531,8 @@ describe("Team delegation message-to-UI flow", () => {
 
 		await waitFor(() => expect(screen.getByText(finalText)).toBeTruthy());
 		expect(assistantRows()).toHaveLength(1);
+		const expandButton = screen.queryByRole("button", { expanded: false });
+		if (expandButton) fireEvent.click(expandButton);
 		expect(screen.getAllByText("委派架构设计")).toHaveLength(1);
 		expect(screen.getAllByTestId("team-member-reply-card")).toHaveLength(1);
 		expect(within(screen.getByTestId("team-member-reply-card")).getByText("已完成")).toBeTruthy();
@@ -573,6 +575,9 @@ describe("Team delegation message-to-UI flow", () => {
 		view.unmount();
 		render(<TeamFlow />);
 		await waitFor(() => expect(screen.getByText(finalText)).toBeTruthy());
+
+		const reopenedExpandButton = screen.queryByRole("button", { expanded: false });
+		if (reopenedExpandButton) fireEvent.click(reopenedExpandButton);
 
 		expect(visibleConversationSignature()).toEqual(completedSignature);
 		expect(screen.queryByText("正在探索实现路径")).toBeNull();
