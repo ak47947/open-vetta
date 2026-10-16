@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildPageMetadata, buildRootMetadata } from "../lib/seo/metadata";
 import { buildRobotsConfig } from "../lib/seo/robots";
@@ -33,6 +35,14 @@ describe("site URL helpers", () => {
 });
 
 describe("metadata", () => {
+	it("points browser and Apple icons at the available Atrix assets", () => {
+		const metadata = buildRootMetadata(origin);
+		expect(metadata.icons).toEqual({ icon: "/favicon.png", apple: "/images/atrix-app-icon.png" });
+		for (const path of ["/favicon.png", site.logoPath]) {
+			expect(existsSync(resolve(import.meta.dirname, "../public", path.slice(1))), path).toBe(true);
+		}
+	});
+
 	it("uses a title template at the site root and does not suffix the homepage", () => {
 		const root = buildRootMetadata(origin);
 		expect(root.title).toEqual({

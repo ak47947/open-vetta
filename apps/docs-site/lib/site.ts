@@ -13,7 +13,7 @@ export const site = {
 	downloadUrl: "https://www.openvetta.com/download",
 	githubUrl: "https://github.com/openvetta/open-vetta",
 	discordUrl: "https://discord.gg/qGqkk22Vg9",
-	logoPath: "/images/vetta-app-icon.webp",
+	logoPath: "/images/atrix-app-icon.png",
 	ogImagePath: "/opengraph-image/",
 	applicationCategory: "DeveloperApplication",
 	operatingSystem: "Windows, macOS, Linux",

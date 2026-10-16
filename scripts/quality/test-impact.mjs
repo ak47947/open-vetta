@@ -54,6 +54,11 @@ const WORKFLOW_CONTRACT_TESTS = new Map([
 const MODEL_SELECTOR_VIEW_TEST = "src/renderer/domains/conversation/components/ModelSelectorView.test.tsx";
 const TEAM_MODEL_SELECTOR_TEST = "src/renderer/domains/conversation/connectors/team/TeamModelSelector.test.tsx";
 const desktopTests = (...tests) => ({ workspaceKey: "desktop", tests });
+const docsMetadataTests = { workspaceKey: "docs-site", tests: ["test/seo.test.ts"] };
+const docsBrandAssetTests = {
+	workspaceKey: "docs-site",
+	tests: ["test/content-quality.test.ts", "test/seo.test.ts"],
+};
 const goalTests = {
 	workspaceKey: "coding-agent",
 	tests: [
@@ -63,6 +68,13 @@ const goalTests = {
 	],
 };
 const EXPLICIT_SOURCE_TESTS = new Map([
+	["apps/docs-site/public/favicon.svg", docsMetadataTests],
+	["apps/docs-site/public/images/vetta-app-icon.webp", docsBrandAssetTests],
+	["apps/docs-site/components/brand-mark.tsx", docsBrandAssetTests],
+	["apps/docs-site/components/home.tsx", docsBrandAssetTests],
+	["apps/docs-site/components/studio-banner.tsx", docsBrandAssetTests],
+	["apps/docs-site/lib/seo/metadata.ts", docsMetadataTests],
+	["apps/docs-site/lib/site.ts", docsMetadataTests],
 	["apps/desktop/src/renderer/remote-desktop-host.ts", desktopTests("src/renderer/remote-desktop-host.test.ts")],
 	[
 		"packages/ai/src/providers/google-stream/request.ts",
@@ -257,16 +269,7 @@ export function createImpactTestPlan(
 		const workspace = workspaceForFile(file);
 		if (!workspace) continue;
 		const relativeFile = file.slice(workspace.dir.length + 1);
-		if (!pathExists(file)) {
-			selectionErrors.push(`${file} was deleted; add an explicit regression test or mapping`);
-			continue;
-		}
-		if (RUNTIME_CONTRACT_PATTERN.test(relativeFile)) {
-			continue;
-		}
-		if (PACKAGE_CONFIG_PATTERN.test(relativeFile)) {
-			continue;
-		}
+		// Deleted resources may have reviewed replacement contracts; still validate every mapped test.
 		const mapped = EXPLICIT_SOURCE_TESTS.get(file);
 		if (mapped) {
 			const testWorkspace = WORKSPACE_PACKAGES.find((candidate) => candidate.key === mapped.workspaceKey);
@@ -277,6 +280,16 @@ export function createImpactTestPlan(
 			}
 			const target = targetForWorkspace(grouped, testWorkspace, selectionErrors);
 			target?.directTests.push(...mapped.tests);
+			continue;
+		}
+		if (!pathExists(file)) {
+			selectionErrors.push(`${file} was deleted; add an explicit regression test or mapping`);
+			continue;
+		}
+		if (RUNTIME_CONTRACT_PATTERN.test(relativeFile)) {
+			continue;
+		}
+		if (PACKAGE_CONFIG_PATTERN.test(relativeFile)) {
 			continue;
 		}
 		if (!CODE_FILE_PATTERN.test(relativeFile)) continue;

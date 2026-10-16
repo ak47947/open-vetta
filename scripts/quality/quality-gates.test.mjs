@@ -518,6 +518,39 @@ describe("affected package selection", () => {
 		]);
 	});
 
+	it("uses replacement asset contracts for explicitly mapped icon deletions", () => {
+		const retiredAssets = ["apps/docs-site/public/favicon.svg", "apps/docs-site/public/images/vetta-app-icon.webp"];
+		const plan = createImpactTestPlan(retiredAssets, (file) => !retiredAssets.includes(file));
+		expect(plan.selectionErrors).toEqual([]);
+		expect(plan.targets).toMatchObject([
+			{
+				key: "docs-site",
+				directTests: ["test/content-quality.test.ts", "test/seo.test.ts"],
+				relatedSources: [],
+			},
+		]);
+	});
+
+	it("selects branding consumer contracts without an empty related-test run", () => {
+		const plan = createImpactTestPlan([
+			"apps/docs-site/components/brand-mark.tsx",
+			"apps/docs-site/components/home.tsx",
+			"apps/docs-site/components/studio-banner.tsx",
+			"apps/docs-site/lib/seo/metadata.ts",
+			"apps/docs-site/lib/site.ts",
+			"apps/docs-site/test/content-quality.test.ts",
+			"apps/docs-site/test/seo.test.ts",
+		]);
+		expect(plan.selectionErrors).toEqual([]);
+		expect(plan.targets).toMatchObject([
+			{
+				key: "docs-site",
+				directTests: ["test/content-quality.test.ts", "test/seo.test.ts"],
+				relatedSources: [],
+			},
+		]);
+	});
+
 	it("selects the remote screen renderer bridge flow without dropping its entrypoint coverage", () => {
 		const plan = createImpactTestPlan([
 			"apps/desktop/src/renderer/remote-desktop-host.ts",

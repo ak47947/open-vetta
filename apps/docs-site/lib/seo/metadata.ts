@@ -46,7 +46,7 @@ export function buildRootMetadata(origin = getSiteOrigin()): Metadata {
 			},
 		},
 		icons: {
-			icon: "/favicon.svg",
+			icon: "/favicon.png",
 			apple: site.logoPath,
 		},
 		openGraph: {

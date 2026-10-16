@@ -9,7 +9,7 @@ export function StudioBanner({ language = "zh" }: { language?: DocsLanguage }) {
 			href="/getting-started/"
 		>
 			<img
-				src="/images/vetta-app-icon.webp"
+				src="/images/atrix-app-icon.png"
 				alt=""
 				width="40"
 				height="40"

@@ -106,7 +106,10 @@ describe("documentation content model", () => {
 		const imagePattern =
 			/(?:src|href)=["'](?<src>\/images\/[^"']+)["']|!\[[^\]]*\]\((?<markdown>\/images\/[^)\s]+)\)/gu;
 
-		for (const path of listContentFiles()) {
+		const componentFiles = readdirSync(resolve(appRoot, "components"), { recursive: true, withFileTypes: true })
+			.filter((entry) => entry.isFile() && entry.name.endsWith(".tsx"))
+			.map((entry) => resolve(entry.parentPath, entry.name));
+		for (const path of [...listContentFiles(), ...componentFiles]) {
 			const contents = readFileSync(path, "utf8");
 			for (const match of contents.matchAll(imagePattern)) {
 				const reference = match.groups?.src ?? match.groups?.markdown;
