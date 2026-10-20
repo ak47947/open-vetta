@@ -315,7 +315,7 @@ jobs:
           SECRET_APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           SECRET_APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           SECRET_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          REQUIRE_RELEASE_SIGNATURE: ${{ needs.prepare.outputs.should-publish == 'true' }}
+          REQUIRE_RELEASE_SIGNATURE: ${{ needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.release_target == 'r2' }}
         run: |
           # 托管 runner 上凭据全部来自下面的 CI Secret。这个分支只在 runner 自身环境
           # 已经提供凭据时生效（自持签名机把它们放在 runner 目录的 .env 里）。
@@ -351,13 +351,13 @@ jobs:
             fi
           done
           if [[ "${PROVIDED}" -eq 0 ]]; then
-            # 任何会进入发布 job 的构建都必须使用生产级签名；只有不发布的
-            # workflow_dispatch 构建才允许生成未签名包供本地调试。
+            # R2 商业版发布要求生产级签名；GitHub Release 开源版或未发布的构建在未配置
+            # Apple 开发者证书时允许产出未签名安装包（仅提供安装包下载，不启用 macOS 自动更新）。
             if [[ "${REQUIRE_RELEASE_SIGNATURE}" == "true" ]]; then
               echo "A published macOS build requires signing and notarization credentials." >&2
               exit 1
             fi
-            echo "No macOS signing credentials configured; this non-publishing workflow_dispatch will build an unsigned package."
+            echo "No macOS signing credentials configured; building an unsigned package."
             exit 0
           fi
           if [[ "${#MISSING[@]}" -ne 0 ]]; then
@@ -474,7 +474,7 @@ jobs:
   android:
     name: build and publish signed arm64 APK
     needs: [prepare, quality]
-    if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.channel != 'test'
+    if: needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.channel != 'test' && needs.prepare.outputs.release_target == 'r2'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: desktop-production

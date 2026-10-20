@@ -1,4 +1,4 @@
-# OpenVetta Agent Guide
+# Atrix Agent Guide
 
 > 本文件适用于整个仓库。更深目录中的 `AGENTS.md` 可补充或收紧规则；发生冲突时，以离目标文件最近的规则为准。
 >
@@ -6,9 +6,11 @@
 
 ## 项目概览
 
-Vetta 是一套 AI Agent 产品栈。**本仓库是客户端侧的开源仓库**：TypeScript/Bun monorepo、Electron 桌面应用、Swift（iOS）与 Kotlin（Android）移动端、Next.js 文档站，以及 Go 写的 IM 旁路网关。面向外部贡献者的入口是 [`CONTRIBUTING.md`](CONTRIBUTING.md)，不要把本文件当成对外贡献指南。
+Atrix 是一套 AI Agent 产品栈。**本仓库是客户端侧的代码仓库**（基于上游 Vetta 开源生态）：TypeScript/Bun monorepo、Electron 桌面应用、Swift（iOS）与 Kotlin（Android）移动端、Next.js 文档站，以及 Go 写的 IM 旁路网关。面向外部贡献者的入口是 [`CONTRIBUTING.md`](CONTRIBUTING.md)，不要把本文件当成对外贡献指南。
 
-服务端（业务 API、管理控制台、官网）在独立的私有仓库 `vetta-serv`，不在此处。涉及计费、配额、订阅、权益的决策文档（ADR-0016/0017/0019/0038/0039/0051/0052/0056）同样只存在于那边——本仓库的 `docs/adr/` 会有对应的编号空洞，这是刻意的，见 `docs/adr/README.md`。
+本项目遵循**“呈现层全面 Atrix，源码层坚守上游兼容”**的策略：在项目名称、应用发布包、用户界面、提示文案、预设模板和用户文档中全面使用 **Atrix**；同时保持工程目录结构、源码包路径和内部依赖与上游一致，方便持续拉取上游更新。
+
+上游服务端（业务 API、管理控制台、官网）在独立的私有仓库 `vetta-serv`，不在此处。涉及计费、配额、订阅、权益的决策文档（ADR-0016/0017/0019/0038/0039/0051/0052/0056）同样只存在于那边——本仓库的 `docs/adr/` 会有对应的编号空洞，这是刻意的，见 `docs/adr/README.md`。
 
 顶层目录按「是否被别的包依赖」划分，新增目录必须遵守：
 
@@ -37,15 +39,67 @@ apps/*  (desktop / cli-host / docs-site / mobile / im-gateway / ssh-helper)
 
 `packages/*` 不得反向依赖 `apps/*`，跨包调用优先使用目标包在 `package.json#exports` 中声明的公开入口，不得从其他包深度导入 `src/**`。
 
+## 品牌重塑与上游同步规范（Atrix 重塑规范）
+
+本项目对外产品品牌、客户端分发、模板及用户交互统一重塑为 **Atrix**。为确保能够**持续、低冲突地平滑同步上游（Vetta / OpenVetta）的更新**，所有开发与重构任务必须严格遵守以下分层规范：
+
+### 1. 核心原则：呈现层全面 Atrix，工程源码层保持兼容
+
+- **面向用户零 Vetta**：在所有最终用户可见、可感知的界面、文案、错误提示、通知、应用发布包、模板及用户文档中，**绝对不允许出现 “Vetta”、“vetta” 或 “OpenVetta” 等字眼**，统一使用 **Atrix**。
+- **面向工程零无谓破坏**：为了避免在 git merge / rebase 上游代码时产生海量代码冲突，**坚决不修改工程目录结构、源码包路径、工作区包名和内部依赖导入路径**。
+
+### 2. 用户呈现与发布层（必须严格使用 Atrix）
+
+以下属于用户呈现与发布层，必须全部使用 Atrix：
+
+- **产品名称与窗口界面（Product Name & UI）**：
+  - Desktop 桌面端窗口标题（Title Bar）、Dock / 任务栏标题、系统托盘（Tray）Tooltip、关于界面（About Dialog）、欢迎屏（Welcome Screen）、空状态占位等，统一展示为 `Atrix`。
+  - 移动端桌面显示名称（iOS `CFBundleDisplayName`、Android `app_name`）、启动屏及系统权限说明弹窗，统一展示为 `Atrix`。
+- **应用发布包与安装向导（Distribution Packages）**：
+  - 桌面端打包配置（Electron Builder 的 `productName`、安装包文件名展示名、安装向导标题、默认安装目录展示名、系统快捷方式与卸载程序标题等）统一为 `Atrix`。
+  - 移动端发布包应用展示名统一为 `Atrix`。
+- **提示信息与多语言文案（Messages & i18n）**：
+  - 所有的国际化资源文件（`apps/desktop` 中的 i18n 资源文件、iOS `Localizable.xcstrings`、Android `strings.xml` 等）中，所有面向用户的提示、确认对话框、通知、错误警告、帮助引导，一律将 Vetta 替换为 Atrix。
+  - 严禁在运行期抛给用户查看的任何 Toast、Alert、对话框或系统通知中残留 Vetta。
+- **Agent 模板与预设（Prompts & Templates）**：
+  - 内置的默认 Prompt 模板、系统提示词（System Prompts）、角色设定、Preset 插件说明、Skill 描述、欢迎引导语及示例代码模板等，凡涉及产品自称或面向用户交互的内容，统一修改为 Atrix。
+- **用户文档与发布说明（Docs & Release Notes）**：
+  - 用户手册、帮助文档、以及 `.github/release-notes/` 中的 Release Notes 正文统一使用 Atrix。
+
+### 3. 工程结构与源码底层（严格保持上游兼容）
+
+为保障与上游代码持续无冲突同步，以下工程与代码资产**严格保持原名与原结构，禁止全局重命名**：
+
+- **目录结构与文件路径**：
+  - Monorepo 顶层及各子目录（如 `apps/*`、`packages/*` 等）保持原样不变。
+  - 带有历史命名的源码路径（例如 `apps/mobile/client-apple/VettaKit`、`.agents/skills/vetta-testing` 等）**严格保持既有路径与文件名不变**。仅修改其内部的用户可见字符串与展示资源，绝不移动或重命名目录/文件。
+- **包名与依赖导入（Package Names & Imports）**：
+  - 各 workspace 的 `package.json#name`（如 `@vetta/ai`、`@vetta/runtime-core`、`@vetta/desktop`、`@vetta-org/*` 等）保持原样不变。
+  - 源码中的内部导入路径（如 `import ... from "@vetta/..."`）严格保持不变，禁止全局批量重命名包名或路径。
+  - Go module 路径、Swift Package/Pod 依赖同理保持原样。
+- **内部私有协议与标识**：
+  - 内部 IPC 通道名称、RPC 协议私有方法、数据持久化内部键名等，只要不对最终用户暴露，保持上游原样。
+  - 历史环境变量（如 `VETTA_TENANT` 等）保持兼容；若需引入 Atrix 专属变量，应采取兼容回退策略（如优先读取 `ATRIX_*`，缺省回退到 `VETTA_*`），避免破坏上游构建脚本。
+- **解耦方式（展示映射与配置适配）**：
+  - 当底层协议枚举或常量带有原有名称且必须反映在界面上时，必须在**展示层建立映射适配（Display Mapping）**转译为 Atrix，严禁直接修改底层核心协议导致与上游分叉。
+
+### 4. Agent 开发与审查双检清单（Pre-flight Checklist）
+
+在交付任何代码、模板、配置或文档前，Agent 必须完成以下双检：
+
+1. **品牌合规检查**：检查所有新写或修改的 UI 界面、i18n 资源、错误提示、通知弹窗、系统提示词模板、打包配置中，是否已完全使用 `Atrix`，且零 `Vetta` 遗漏？
+2. **上游兼容检查**：是否保持了原有的工程目录结构？是否避免了对包名（`@vetta/*` 等）、导入路径和底层协议的无谓修改？
+
 ## 开始任务
 
 开始非平凡任务前：
 
 1. 用 `git status --short` 确认工作区状态，保留用户和其他 Agent 的现有改动。
-2. 确认涉及的包和职责边界，完整阅读目标目录适用的最近一级 `AGENTS.md`。
-3. 阅读目标包的 `README.md`、相关 ADR，以及与任务直接相关的源码和测试，明确当前行为、设计意图和必须保持的不变量。
-4. 在编码前比较“直接修改”与“先重构再修改”两种方案，按照下文重构条件判断现有结构是否适合承载本次变化，并按照测试规则确定哪些风险必须由自动化测试覆盖。
-5. 以当前源码、`package.json`、类型定义和可执行脚本为事实源。文档与实现冲突时，先核实并在交付中指出。
+2. 明确本次任务属于“用户呈现层”还是“工程代码层”：涉及用户界面、文案、模板或发布包时严格落实 Atrix；涉及架构和代码时严格保持目录和包路径兼容。
+3. 确认涉及的包和职责边界，完整阅读目标目录适用的最近一级 `AGENTS.md`。
+4. 阅读目标包的 `README.md`、相关 ADR，以及与任务直接相关的源码和测试，明确当前行为、设计意图和必须保持的不变量。
+5. 在编码前比较“直接修改”与“先重构再修改”两种方案，按照下文重构条件判断现有结构是否适合承载本次变化，并按照测试规则确定哪些风险必须由自动化测试覆盖。
+6. 以当前源码、`package.json`、类型定义和可执行脚本为事实源。文档与实现冲突时，先核实并在交付中指出。
 
 只有当不同解释会实质改变公共合同、用户行为、数据兼容性或产生不可逆影响时才询问用户。其余情况采用最小、可回退的合理假设并继续执行，同时明确说明关键假设。
 
@@ -103,6 +157,7 @@ Desktop 主进程部分目录还有更细规则；修改对应目录时必须继
 - 优先使用仓库已有模式、公共 API 和辅助函数。只有一个简单实现且没有真实变化点时，不要为了形式新增接口或设计模式。
 - 不删除、降级或绕过看似有意存在的功能、校验、错误处理和兼容逻辑，除非用户明确批准行为变化。
 - 保持入口文件轻量，只负责注册、路由、导出和装配。业务规则、解析、状态和副作用按既有职责边界放置。
+- 保持与上游同步能力是架构演进的核心约束之一：严禁因局部重构或功能修改而调整既有工程目录结构、源码包路径或全局重构内部 `@vetta/*` 模块名；任何仅为风格而改动路径或依赖的行为均不可接受。
 - 修改公共类型、协议、IPC、Schema、持久化格式或包导出时，检查所有生产者、消费者和兼容路径。
 - 生成文件不得手工编辑；找到其生成脚本或事实源后再修改。
 - 注释只解释非显然约束和原因，不复述代码。
@@ -143,8 +198,8 @@ Desktop 主进程部分目录还有更细规则；修改对应目录时必须继
 - 类型使用标准顶层 `import type`，不得使用 `import("pkg").Type`。运行时动态 `import()` 仅用于明确的懒加载或代码分割。
 - 不通过删除功能、降低类型安全或降级依赖来消除类型错误。依赖升级会扩大任务范围时，先说明影响并征得用户同意。
 - 快捷键必须进入现有可配置 keybinding 对象，不得在业务逻辑中写死按键组合。
-- `apps/desktop` 中所有用户可见文案必须走 i18n，包括 label、按钮、placeholder、菜单、通知、title 和 aria 属性。
-- 移动端（`apps/mobile/client-apple`、`apps/mobile/client-android`）同样必须走 i18n：所有用户可见文案同时提供英文与简体中文、跟随系统语言，其他语言回落英文；视图、错误提示和系统权限说明里都不得写死任何语言的字面量。iOS 文案在 `VettaKit` 的 `L10n`（键）与 `Resources/Localizable.xcstrings`（译文）里成对新增，Info.plist 权限说明走 `Vetta/Resources/InfoPlist.xcstrings`；Android 走 Compose Multiplatform 资源 `shared/src/commonMain/composeResources/values/strings.xml`（英文）与 `values-zh-rCN/strings.xml`（中文），非界面代码用 `UiText` 传递文案、由界面解析。
+- `apps/desktop` 中所有用户可见文案必须走 i18n，包括 label、按钮、placeholder、菜单、通知、title 和 aria 属性，且文案与品牌必须严格呈现为 **Atrix**，绝不允许在用户界面与提示中出现 `Vetta` 或 `vetta`。
+- 移动端（`apps/mobile/client-apple`、`apps/mobile/client-android`）同样必须走 i18n：所有用户可见文案同时提供英文与简体中文、跟随系统语言，其他语言回落英文；视图、错误提示和系统权限说明里都不得写死任何语言的字面量，且产品展示名必须为 **Atrix**。iOS 内部历史工程路径（如 `VettaKit` 的 `L10n` 与 `Resources/Localizable.xcstrings`、`Vetta/Resources/InfoPlist.xcstrings`）保持路径不改以兼容上游，但里面的译文内容与权限描述必须全部呈现为 Atrix；Android 走 Compose Multiplatform 资源 `shared/src/commonMain/composeResources/values/strings.xml`（英文）与 `values-zh-rCN/strings.xml`（中文），非界面代码用 `UiText` 传递文案、由界面解析，同样统一为 Atrix。
 - UI 修改遵循现有设计系统和组件模式；交互行为变化应优先抽取可测试的纯逻辑，不默认挂载大型 React 树。
 
 ## AI 与安全边界
@@ -225,7 +280,7 @@ Desktop 主进程部分目录还有更细规则；修改对应目录时必须继
 - 获得 UI 验证授权后，默认使用 `verify:ui:status:dev` / `attach:dev` / `pw:dev` 附着用户已运行的开发环境；只有验证首次启动、空状态、数据迁移、隔离性或用户明确要求新环境时才使用 Fresh。不得仅因 Fresh 是无后缀命令的默认 Profile 就优先启动它。
 - 只有任务或验证明确需要构建产物时才运行相应的 `bun run build:*`，不要把全量构建当作默认反馈循环。
 - 修改 Go 包时，使用该包 README/Makefile 定义的定向测试和检查；根 `bun run check` 不覆盖 Go。
-- 移动端改动同样适用本节全部测试要求，根 `bun run check` 与 Vitest 都不覆盖它们。iOS 修改 `VettaKit` 时运行 `(cd apps/mobile/client-apple/VettaKit && swift test --no-parallel)`，其中 `LocalizationTests` 会拦下缺译文或键不一致；模拟器构建通过即可提交；界面效果由用户在真机上验收，`VettaUITests`（`scripts/ui-test.sh`）不是必做项，除非用户要求不运行。Android 使用 `./gradlew :shared:testAndroidHostTest`。
+- 移动端改动同样适用本节全部测试要求，根 `bun run check` 与 Vitest 都不覆盖它们。iOS 修改内部保留路径 `VettaKit` 时运行 `(cd apps/mobile/client-apple/VettaKit && swift test --no-parallel)`，其中 `LocalizationTests` 会拦下缺译文或键不一致；模拟器构建通过即可提交；界面效果由用户在真机上验收，`VettaUITests`（`scripts/ui-test.sh`）不是必做项，除非用户要求不运行。Android 使用 `./gradlew :shared:testAndroidHostTest`。
 - 文档任务至少核对链接、命令和引用路径；文档专用修改不要求为了形式运行完整 TypeScript 检查。
 
 详细质量门禁见 [`docs/dev/quality-gates.md`](docs/dev/quality-gates.md)，Desktop 验证流程见 [`docs/dev/README.md`](docs/dev/README.md)。
@@ -249,8 +304,8 @@ Desktop 主进程部分目录还有更细规则；修改对应目录时必须继
 ### 怎么写
 
 - 分 `## 新增` / `## 改进` / `## 修复` / `## 其他` 四节，没有内容的小节省略。
-- 面向用户描述影响：说清楚用户会看到什么变化，而不是改了哪个函数；行为有取舍时把代价一并写出来。
-- 关联 PR 或 issue 时统一用 `owner/repo#123` 格式，例如 `openvetta/open-vetta#8`。
+- 面向用户描述影响：说清楚用户会看到什么变化，而不是改了哪个函数；产品自称与特性一律使用 **Atrix**，不得在发布说明正文中残留 Vetta；行为有取舍时把代价一并写出来。
+- 关联 PR 或 issue 时统一用 `owner/repo#123` 格式，例如仓库工单或上游引用 `openvetta/open-vetta#8`。
 - 没有用户可感知影响的纯内部改动（内部重构、测试、开发文档）仍要在「其他」留一条，但保持一句话，不要挤占正文。
 - 已发布版本的发布说明不得修改；发现写错另起一条修订说明。
 - 发布说明缺失会让 `desktop-release` 流水线在质量阶段直接失败（`node scripts/release/release-notes.mjs --check`），补不上就没有正文可发。
@@ -278,6 +333,7 @@ Desktop 主进程部分目录还有更细规则；修改对应目录时必须继
 
 - 改变了什么可观察行为或文档合同
 - 修改了哪些主要文件
+- 品牌合规与兼容性确认：确认面向用户的界面、提示信息、模板或文档未出现 `Vetta`，且未擅自修改工程目录、包路径或内部依赖
 - 实际运行了哪些测试和检查及其结果
 - 哪些验证未运行以及原因
 - 本次条目已写入 `.github/release-notes/v<版本号>.md`（改动、修正、新增、合并 PR、关闭 issue 均需写入）

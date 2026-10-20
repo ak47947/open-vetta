@@ -224,7 +224,7 @@ func TestLink_EmitsURIAndResolvesAccount(t *testing.T) {
 	opts := CLIOptions{Path: fakeCLI(t), ConfigDir: t.TempDir()}
 
 	var uris []string
-	account, err := Link(context.Background(), opts, "Vetta", func(uri string) {
+	account, err := Link(context.Background(), opts, "Atrix", func(uri string) {
 		uris = append(uris, uri)
 	})
 	if err != nil {
@@ -242,7 +242,7 @@ func TestLink_NoAccountAfterSuccess(t *testing.T) {
 	t.Setenv("VETTA_FAKE_SIGNAL_NO_ACCOUNT", "1")
 	opts := CLIOptions{Path: fakeCLI(t), ConfigDir: t.TempDir()}
 
-	if _, err := Link(context.Background(), opts, "Vetta", nil); err == nil {
+	if _, err := Link(context.Background(), opts, "Atrix", nil); err == nil {
 		t.Fatal("expected ErrNotLinked when listAccounts stays empty")
 	}
 }
@@ -508,7 +508,7 @@ func TestLink_NoURIReportsUnreachable(t *testing.T) {
 	t.Setenv("VETTA_FAKE_SIGNAL_NO_URI", "1")
 	opts := CLIOptions{Path: fakeCLI(t), ConfigDir: t.TempDir()}
 
-	_, err := Link(context.Background(), opts, "Vetta", func(string) {
+	_, err := Link(context.Background(), opts, "Atrix", func(string) {
 		t.Fatal("no URI should have been reported")
 	})
 

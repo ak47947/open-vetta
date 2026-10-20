@@ -253,7 +253,7 @@ describe("buildSkillAbilities", () => {
 		expect(items).toHaveLength(1);
 		expect(items[0]).toMatchObject({
 			slug: "vetta-ui-design",
-			title: "Vetta 设计",
+			title: "Atrix 设计",
 			description: "设计产品界面",
 		});
 	});

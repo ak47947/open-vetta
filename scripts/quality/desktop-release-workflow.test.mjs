@@ -275,7 +275,7 @@ describe("Desktop release workflow contracts", () => {
 		const android = jobs.android;
 		expect(android.needs).toEqual(["prepare", "quality"]);
 		expect(android.if).toBe(
-			"needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.channel != 'test'",
+			"needs.prepare.outputs.should-publish == 'true' && needs.prepare.outputs.channel != 'test' && needs.prepare.outputs.release_target == 'r2'",
 		);
 		expect(android.environment).toBe("desktop-production");
 		expect(android.permissions).toEqual({ contents: "write" });

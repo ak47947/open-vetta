@@ -8,6 +8,7 @@ import {
 	type AbilitySecondaryAction,
 } from "../../lib/ability-detail-actions";
 import { useAbilityText } from "../../hooks/useAbilityText";
+import { toAtrixDisplayString } from "../../lib/brand-display-mapping";
 import type { AbilityItem } from "../../types";
 import { AbilityIcon } from "../AbilityIcon";
 import { AbilityOperationStatus } from "../AbilityOperationStatus";
@@ -75,7 +76,7 @@ export function AbilityDetailHeader({
 						{item.author ? (
 							<span>
 								<dt className="sr-only">{t("detail.meta.author")}</dt>
-								<dd className="inline text-foreground/80">{item.author}</dd>
+								<dd className="inline text-foreground/80">{toAtrixDisplayString(item.author)}</dd>
 							</span>
 						) : null}
 						{item.author && item.version ? (

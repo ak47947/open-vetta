@@ -186,6 +186,7 @@ src/
 
 **铁律**
 - **模块级常量不准存中文。** 形如 `const MODE_OPTIONS = [{ label: "沙盒受限" }]` 一律禁止——改成存 i18n key（或只留 `mode`/`icon`），渲染期用 `t()` 解析；或把常量挪进组件内。
+- **品牌与产品名必须为 Atrix**：所有呈现给用户的文案（包括 zh/en json catalog、托盘菜单、原生 dialog、窗口标题、通知、关于界面、模板与引导词等），产品名与系统自称统一使用 **Atrix**，**绝对禁止出现 Vetta / vetta / OpenVetta**。同时工程源码内部符号、包名（如 `@vetta/*`）及内部接口（如 `window.vetta.*`）保持不变，以兼容上游代码同步。
 - key 写错 / 不存在会被 **tsc 拦下**（`i18next.d.ts` 基于 zh 资源做了类型增强，有自动补全）。
 - **新增 ns** 要在三处注册：`src/shared/i18n/config.ts` 的 `NAMESPACES`、`src/shared/i18n/resources.ts`、`src/renderer/shared/i18n/i18next.d.ts`。
 - **不抽**：代码注释、日志（`*.warn`/`console`）、发给 LLM 或协议/IPC channel 的串——保持原样。

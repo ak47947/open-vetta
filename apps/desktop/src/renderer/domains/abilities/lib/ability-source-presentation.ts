@@ -1,4 +1,5 @@
 import type { AbilityCatalogSource } from "../types";
+import { toAtrixDisplayString } from "./brand-display-mapping";
 
 export type AbilitySourceNameKey = "detail.source.builtin" | "detail.source.local" | "detail.source.server";
 
@@ -17,7 +18,7 @@ export function resolveAbilitySourcePresentation(source: AbilityCatalogSource): 
 			return { nameKey: "detail.source.server" };
 		case "github":
 			return {
-				name: source.name,
+				name: toAtrixDisplayString(source.name),
 				repository: source.repository,
 			};
 	}

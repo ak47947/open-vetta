@@ -10,6 +10,7 @@ import type {
 	AbilityType,
 	MarketAbility,
 } from "@shared/lib/api";
+import { toAtrixDisplayString, toAtrixDisplayValue } from "./brand-display-mapping";
 
 /** type → 卡片角标图标 class（写在 TS 中便于 UnoCSS 扫描）。 */
 export const ABILITY_TYPE_ICON: Record<AbilityType, string> = {
@@ -100,17 +101,20 @@ export interface AbilityDetailContent {
  * `raw.detail` 的 locale 解析：`i18n[locale]` 命中即整体替换该字段，不与默认值合并。
  *
  * 展示字段收进 detail 后，覆盖块与默认值同构，取值统一为 `i18n[locale] ?? 顶层`。
+ * 所有用户可见文案均通过展示层品牌映射适配转译为 Atrix。
  */
 export function resolveAbilityDetailContent(detail: AbilityDetail | undefined, locale: string): AbilityDetailContent {
 	const base = detail ?? {};
 	const override = pickLocaleValue(base.i18n, locale);
+	const rawName = override?.name ?? base.name;
+	const rawDescription = override?.description ?? base.description;
 	return {
-		content: override?.content ?? base.content ?? "",
-		showcases: override?.showcases ?? base.showcases ?? [],
-		blocks: override?.blocks ?? base.blocks ?? [],
-		meta: override?.meta ?? base.meta ?? [],
-		name: override?.name ?? base.name,
-		description: override?.description ?? base.description,
+		content: toAtrixDisplayString(override?.content ?? base.content ?? ""),
+		showcases: toAtrixDisplayValue(override?.showcases ?? base.showcases ?? []),
+		blocks: toAtrixDisplayValue(override?.blocks ?? base.blocks ?? []),
+		meta: toAtrixDisplayValue(override?.meta ?? base.meta ?? []),
+		name: rawName !== undefined ? toAtrixDisplayString(rawName) : undefined,
+		description: rawDescription !== undefined ? toAtrixDisplayString(rawDescription) : undefined,
 	};
 }
 
@@ -132,10 +136,11 @@ export function localizeMarketAbility(entry: MarketAbility, locale: string): Mar
 	// tags 是整体替换：译文块给了就用它，空数组视为未覆盖
 	const tags = override.tags?.length ? override.tags : undefined;
 	if (!name && !description && !tags) return entry;
+
 	return {
 		...entry,
-		name: name || entry.name,
-		description: description || entry.description,
-		tags: tags ?? entry.tags,
+		name: toAtrixDisplayString(name || entry.name),
+		description: toAtrixDisplayString(description || entry.description),
+		tags: (tags ?? entry.tags).map(toAtrixDisplayString),
 	};
 }

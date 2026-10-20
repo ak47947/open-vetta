@@ -76,4 +76,28 @@ describe("publish GitHub installers", () => {
 			}),
 		).toThrow("No android installers");
 	});
+	it("uploads Windows and Linux auto-update metadata when GitHub Releases is the update provider", () => {
+		const fixture = releaseFixture([
+			"Atrix-0.5.62-x64-installer.exe",
+			"Atrix-0.5.62-x86_64.AppImage",
+			"Atrix-0.5.62-arm64.dmg",
+			"latest.yml",
+			"latest-linux.yml",
+			"latest-mac-arm64.yml",
+		]);
+		const uploaded = [];
+		const github = ([, operation, , ...args]) => {
+			if (operation === "view") return true;
+			if (operation === "upload") uploaded.push(...args.filter((arg) => arg !== "--clobber"));
+			return true;
+		};
+		publishGithubInstallers({ ...fixture, platform: "desktop", updateProvider: "github", github });
+		expect(uploaded).toEqual([
+			join(fixture.directory, "Atrix-0.5.62-arm64.dmg"),
+			join(fixture.directory, "Atrix-0.5.62-x64-installer.exe"),
+			join(fixture.directory, "Atrix-0.5.62-x86_64.AppImage"),
+			join(fixture.directory, "latest-linux.yml"),
+			join(fixture.directory, "latest.yml"),
+		]);
+	});
 });

@@ -2,6 +2,8 @@ import type { GitHubMarketplaceOrigin, OpenMarketplaceAbility, OpenMarketplaceSo
 import type { MarketAbility } from "@shared/lib/api";
 import type { AbilityCatalogSource } from "../types";
 
+import { toAtrixDisplayString, toAtrixDisplayValue } from "./brand-display-mapping";
+
 export type OpenCatalogMarketAbility = MarketAbility & {
 	listed?: boolean;
 	origin: GitHubMarketplaceOrigin;
@@ -21,19 +23,19 @@ function toMarketAbility(
 		listed: ability.listed,
 		slug: ability.slug,
 		type: ability.type,
-		name: ability.name,
-		description: ability.description,
+		name: toAtrixDisplayString(ability.name),
+		description: toAtrixDisplayString(ability.description),
 		license: ability.license,
 		version: ability.version,
-		author: ability.author,
+		author: toAtrixDisplayString(ability.author),
 		icon: ability.icon,
 		category: ability.category,
 		category_i18n: ability.categoryI18n,
-		tags: ability.tags,
+		tags: ability.tags?.map(toAtrixDisplayString) ?? [],
 		sha256: "",
 		download_count: 0,
 		config: ability.config,
-		detail: ability.detail,
+		detail: toAtrixDisplayValue(ability.detail),
 		updated_at: snapshot.syncedAt ?? "",
 		origin: ability.origin,
 		configVersion: ability.configVersion,
@@ -49,6 +51,10 @@ function toMarketAbility(
 function toServerMarketAbility(ability: MarketAbility): CatalogMarketAbility {
 	return {
 		...ability,
+		name: toAtrixDisplayString(ability.name),
+		description: toAtrixDisplayString(ability.description),
+		author: toAtrixDisplayString(ability.author),
+		detail: toAtrixDisplayValue(ability.detail),
 		catalogSource: { kind: "server", id: "server" },
 	};
 }

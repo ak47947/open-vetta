@@ -69,7 +69,7 @@ function buildSuccessMessage(reviewStatus, hasPending) {
 	if (reviewStatus === "approved") {
 		return "提交成功，已上架，市场中立即可见。";
 	}
-	return "提交成功，正在等待管理员审核。审核通过后才会出现在能力市场中，可用内建 vetta MCP 的 list_my_abilities 查看进度与驳回理由。";
+	return "提交成功，正在等待管理员审核。审核通过后才会出现在能力市场中，可用内建 MCP 的 list_my_abilities 查看进度与驳回理由。";
 }
 
 async function main() {

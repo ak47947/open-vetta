@@ -7,7 +7,7 @@ export const OPEN_SOURCE_BUILD_DEFAULTS = Object.freeze({
 	VETTA_BUILD_ENV: "opensource",
 	VETTA_CLOUD_ENABLED: "false",
 	VETTA_UPDATE_PROVIDER: "github",
-	VETTA_UPDATE_GITHUB_OWNER: "openvetta",
+	VETTA_UPDATE_GITHUB_OWNER: "ak47947",
 	VETTA_UPDATE_GITHUB_REPO: "open-vetta",
 });
 
