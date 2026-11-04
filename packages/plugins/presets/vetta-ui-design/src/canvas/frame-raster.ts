@@ -102,6 +102,16 @@ export interface FrameRasterState {
 	/** 挂载之后是否显示活体（而不是位图）。截图失败的 frame 会留在活体，是安全兜底。 */
 	isLive(frameId: string): boolean;
 	/**
+	 * 本该是活体、只因缩放/平移进行中才临时显示位图（见 interacting）。
+	 *
+	 * 这类 frame 的 iframe 不能 display:none：手势如果是从 frame 里起手的，触控板这一趟
+	 * 滚轮全程锁定在起手时命中的那个 iframe 上（生产环境里它是独立进程的跨源 iframe），
+	 * 收起来之后余下的滚轮全部丢失——画布 220ms 收不到输入就判定操作结束、把它放出来，
+	 * 它接住下一个 tick 又被收起，缩放于是约 230ms 才挪一步。只把它透明掉，转发就不断。
+	 * dev 下画布与引擎同站点、iframe 同进程，收起后滚轮会改投给画布，所以那边测不出来。
+	 */
+	isParked(frameId: string): boolean;
+	/**
 	 * 内容变了就作废旧位图，重新排队截图。调用方（DesignCanvas）在热更新到达、
 	 * 文件监听发现源码变更、以及交互改了 frame 尺寸时调用。
 	 */
@@ -229,6 +239,18 @@ export function useFrameRasters({
 	/** 尺寸回调随 manifest 变，走 ref 免得截图 effect 反复重排队。 */
 	const offscreenRef = useRef(offscreen);
 	offscreenRef.current = offscreen;
+	/** 离屏位图是按什么尺寸截的（`宽x高`）。缓存里恢复出来的没有记录，按对得上处理。 */
+	const rasterSizesRef = useRef(new Map<string, string>());
+	/**
+	 * 位图的尺寸和 frame 此刻的尺寸对不上：frame 改了尺寸（展开/收起、拖手柄），新图
+	 * 还没截好。这张图塞进新尺寸里会被 object-cover 拉伸裁剪，不能拿来顶替活体。
+	 * 读的是 ref：尺寸一变画布就会 invalidate，dirty 跟着变，用到它的地方自然重算。
+	 */
+	const rasterSizeStale = (frameId: string): boolean => {
+		const captured = rasterSizesRef.current.get(frameId);
+		const size = offscreenActive ? (offscreenRef.current?.sizeOf(frameId) ?? null) : null;
+		return captured !== undefined && size !== null && `${size.width}x${size.height}` !== captured;
+	};
 	/** 同一失效端口只上报一次，避免三个并发槽各触发一轮重启和相同日志。 */
 	const unavailablePortRef = useRef<number | null>(null);
 
@@ -470,6 +492,7 @@ export function useFrameRasters({
 			// 此后到截图落地之间任何一次失效（invalidate / notifyRendered / refreshAll）都
 			// 意味着这张图可能按旧内容截的，落地后必须重截。
 			const seqAtStart = invalidationSeqRef.current.get(frameId) ?? 0;
+			let capturedSize: string | null = null;
 			const runCapture = (): Promise<string> => {
 				if (offscreenActive) {
 					const context = offscreenRef.current;
@@ -477,6 +500,7 @@ export function useFrameRasters({
 					if (context === null || size === null) {
 						return Promise.reject(new Error(`frame size unknown: ${frameId}`));
 					}
+					capturedSize = `${size.width}x${size.height}`;
 					// 不占 withCaptureLock：离屏窗口与 iframe 内的 html-to-image（交付物
 					// 截图）用的是两套互不竞争的资源，串行化只会平白拖慢两边。
 					// 画布刷新只要位图：布局机检是截图工具那条路的事，位图队列是后台
@@ -508,6 +532,8 @@ export function useFrameRasters({
 							// 解码在前、写状态在后：dirty 的清除在 finally，会等这个 await，
 							// 所以位图进入 rasters 时一定是「挂上就能画」的。
 							await decodeRaster(dataUrl);
+							if (capturedSize === null) rasterSizesRef.current.delete(frameId);
+							else rasterSizesRef.current.set(frameId, capturedSize);
 							setRasters((current) => withBudget(current, frameId, dataUrl, mounted));
 							// 落盘失败不影响这一轮（内存里已经有图），代价只是下次进画布得重截。
 							void saveRaster(cacheKey, frameId, dataUrl);
@@ -564,7 +590,9 @@ export function useFrameRasters({
 			if (capturingRef.current.size >= limit) break;
 			if (capturingRef.current.has(frameId)) continue;
 			if (!dirty.has(frameId)) continue;
-			if (frameId === activeFrameId) continue;
+			// 选中的那一帧平时不截：它显示的是活体，内容一变就重截只是白耗。例外是离屏模式下
+			// 尺寸变了（选中着点了展开）——交互期要拿位图顶替活体，旧尺寸的图会对不上。
+			if (frameId === activeFrameId && !rasterSizeStale(frameId)) continue;
 			if (!offscreenActive && !(mounted.has(frameId) && renderedRef.current.has(frameId))) continue;
 			if (getFrameError(frameId)) {
 				errorSkippedRef.current.add(frameId);
@@ -591,28 +619,31 @@ export function useFrameRasters({
 
 	const isMounted = useCallback((frameId: string): boolean => mounted.has(frameId), [mounted]);
 
-	const liveSet = useMemo(() => {
+	const { liveSet, parkedSet } = useMemo(() => {
 		const live = new Set<string>();
+		const parked = new Set<string>();
 		for (const frameId of mounted) {
 			// 截图期间被强制拉活的不能动：display:none 的 iframe 没有布局，截出来是空的。
 			if (forced.has(frameId)) {
 				live.add(frameId);
 				continue;
 			}
-			// 缩放/平移途中，有位图的一律先用位图顶着（见 interacting）。没位图的留活体：
-			// 那是它此刻唯一有内容的那一层，收起来只会在操作期间变成一片空白。
-			if (interacting && rasters.has(frameId)) continue;
 			if (frameId === activeFrameId || dirty.has(frameId) || !rasters.has(frameId)) {
-				live.add(frameId);
+				// 缩放/平移途中，有位图的一律先用位图顶着（见 interacting）。没位图的留活体：
+				// 那是它此刻唯一有内容的那一层，收起来只会在操作期间变成一片空白。
+				if (interacting && rasters.has(frameId) && !rasterSizeStale(frameId)) parked.add(frameId);
+				else live.add(frameId);
 			}
 		}
-		return live;
+		return { liveSet: live, parkedSet: parked };
 	}, [mounted, activeFrameId, forced, dirty, interacting, rasters]);
 
 	const liveRef = useRef(liveSet);
 	liveRef.current = liveSet;
 
 	const isLive = useCallback((frameId: string): boolean => liveSet.has(frameId), [liveSet]);
+
+	const isParked = useCallback((frameId: string): boolean => parkedSet.has(frameId), [parkedSet]);
 
 	const runLive = useCallback(async <T,>(frameId: string, run: () => Promise<T>): Promise<T> => {
 		// 本来就活着的话切过去只要一帧；如果它还没进过挂载窗口，iframe 是刚挂上的，
@@ -641,6 +672,7 @@ export function useFrameRasters({
 		rasterOf,
 		isMounted,
 		isLive,
+		isParked,
 		invalidate,
 		notifyRendered,
 		runLive,

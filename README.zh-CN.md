@@ -79,7 +79,7 @@ bun run dev
 - **使用本机与外部工具。** 运行命令、检查文件、连接 MCP 服务，并显式批准敏感操作。
 - **处理专业产物。** 预览和处理源码、PDF、Office 文件、表格、图片、音视频、SVG 与生成式 UI。
 - **放大已经跑通的任务。** 用批量任务处理多个目录，或把稳定流程交给自动化定时执行。
-- **复用组织知识。** 建立本地知识库，安装可复用的技能和场景。
+- **复用组织知识。** 建立本地知识库，安装可复用的技能。
 - **离开电脑也能继续。** 使用受支持的 IM 桥接、Webhook、通知、快捷输入和桌面原生集成。
 
 公开文档持续维护当前任务指南与截图：[浏览全部产品能力](https://docs.openvetta.com/product/overview/)。
@@ -172,6 +172,8 @@ Pull Request 发往 **`dev`** 分支。贡献地图、测试要求与评审门�
 ## 致谢与许可
 
 Open Vetta 建立在广泛的开源生态之上，包括 pi、Codex CLI、MCP、Electron、React、Bun、models.dev，以及 [`NOTICE`](NOTICE) 中列出的项目。完整第三方清单与原始版权声明以该文件为准。
+
+特别感谢 [taste-skill](https://github.com/Leonxlnx/taste-skill)（MIT）及其作者。设计插件 vetta-ui-design 的设计方向库、App 界面规则与 Unsplash 照片索引都来自这个项目，它对真实获奖网站与产品界面的研究扎实而用心，是 vetta-ui-design 摆脱模板化设计的基础。
 
 本项目采用 [Apache-2.0](LICENSE) 许可。
 

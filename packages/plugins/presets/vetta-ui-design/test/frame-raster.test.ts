@@ -402,10 +402,15 @@ it("交互期把有位图的 frame 降为位图，iframe 收起但不卸载", as
 		expect(latest.isLive("a")).toBe(false);
 		// 但必须还挂着——卸掉就要整页重新加载，操作结束会看见一轮重启。
 		expect(latest.isMounted("a")).toBe(true);
+		// 而且只能透明、不能 display:none：手势锁定在这个 iframe 上，收起来余下的滚轮全丢。
+		expect(latest.isParked("a")).toBe(true);
+		// 本来就只显示位图的 b 不在此列，照旧收着。
+		expect(latest.isParked("b")).toBe(false);
 
 		// 结束后恢复活体。
 		await render(false);
 		expect(latest.isLive("a")).toBe(true);
+		expect(latest.isParked("a")).toBe(false);
 	} finally {
 		setPluginCtx(null as unknown as PluginContext);
 	}
@@ -420,6 +425,7 @@ it("交互期没有位图的 frame 仍然保持活体", async () => {
 	});
 	expect(latest.rasterOf("a")).toBe(null);
 	expect(latest.isLive("a")).toBe(true);
+	expect(latest.isParked("a")).toBe(false);
 });
 
 /**
@@ -467,6 +473,59 @@ it("持久化状态变化后全部重截，并重载其他还挂着的 iframe", 
 		await flushMicrotasks();
 		expect(inFlight).toBeGreaterThan(0);
 		expect(pending.length).toBe(inFlight);
+	} finally {
+		setPluginCtx(null as unknown as PluginContext);
+	}
+});
+
+/**
+ * 复现的 bug：选中状态下点「展开」，frame 的显示高度变了，可选中的那一帧不进截图队列，
+ * 位图还是按旧尺寸截的；这时一缩放/平移，交互期把它降为位图，旧图被拉伸进新尺寸里，
+ * 和活体对不上——要失焦一次才会重截。
+ */
+it("选中的 frame 改了尺寸后，交互期不拿旧尺寸的位图顶替，并立即按新尺寸重截", async () => {
+	const heights: number[] = [];
+	setPluginCtx({
+		capture: {
+			offscreen: (options: { height: number }) => {
+				heights.push(options.height);
+				return Promise.resolve({ dataUrl: `data:h${options.height}`, scaleFactor: 2 });
+			},
+			releaseOffscreen: () => Promise.resolve(),
+		},
+	} as unknown as PluginContext);
+	try {
+		let height = 844;
+		const offscreen = { port: 5173, sizeOf: () => ({ width: 390, height }) };
+		await mount(["a"], offscreen);
+		await advance(50);
+		await flushMicrotasks();
+		expect(latest.rasterOf("a")).toBe("data:h844");
+
+		const render = async (interacting: boolean): Promise<void> => {
+			await act(async () => {
+				root.render(createElement(Harness, { frameIds: ["a"], activeFrameId: "a", interacting, offscreen }));
+			});
+		};
+		await render(false);
+
+		// 选中状态下展开：显示高度变了，画布让旧位图作废。
+		height = 2000;
+		act(() => latest.invalidate("a"));
+		await render(true);
+		// 旧位图尺寸不对：交互期继续显示活体，不拿它顶上。
+		expect(latest.isParked("a")).toBe(false);
+		expect(latest.isLive("a")).toBe(true);
+
+		// 选中着也要按新尺寸重截，不必等失焦。
+		await advance(50);
+		await flushMicrotasks();
+		expect(heights).toEqual([844, 2000]);
+		expect(latest.rasterOf("a")).toBe("data:h2000");
+
+		// 新位图对得上了：交互期照常降为位图。
+		await render(true);
+		expect(latest.isParked("a")).toBe(true);
 	} finally {
 		setPluginCtx(null as unknown as PluginContext);
 	}
