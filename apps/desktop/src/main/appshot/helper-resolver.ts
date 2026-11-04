@@ -3,22 +3,25 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { app } from "electron";
 
-const APP_BUNDLE_NAME = "Vetta Computer Use.app";
-const EXECUTABLE_NAME = "Vetta Computer Use";
+const APP_BUNDLE_NAME = "Atrix Computer Use.app";
+const EXECUTABLE_NAME = "Atrix Computer Use";
 
 /**
- * Resolve the absolute path to the `Vetta Computer Use.app` bundle (macOS only).
+ * Resolve the absolute path to the `Atrix Computer Use.app` bundle (macOS only).
  *
  * In packaged builds the bundle lives under
- *   <Resources>/appshot/Vetta Computer Use.app
+ *   <Resources>/appshot/Atrix Computer Use.app
  * (staged by scripts/prepare-pack.js via extraResources).
  *
  * In dev mode (`!app.isPackaged`) we fall back to
- *   <apps/desktop>/resources/appshot/bin/Vetta Computer Use.app
+ *   <apps/desktop>/resources/appshot/bin/Atrix Computer Use.app
  * which scripts/build-appshot-helper.js compiles as part of `bun run dev`.
  * We resolve relative to `process.cwd()`, which is `apps/desktop`
  * when running via `bun run dev` (same trick as im-host/binary-resolver.ts;
  * `app.getAppPath()` is unreliable in dev mode).
+ *
+ * 名字必须与 scripts/build-appshot-helper.js 的 APP_NAME 一致：系统设置里
+ * TCC 权限列表展示的就是这个 bundle 名。
  */
 export function resolveHelperAppBundlePath(): string {
 	return app.isPackaged
@@ -28,7 +31,7 @@ export function resolveHelperAppBundlePath(): string {
 
 /**
  * Resolve the absolute path to the helper's Mach-O executable inside
- * `Vetta Computer Use.app`.
+ * `Atrix Computer Use.app`.
  *
  * Throws if the resolved path does not exist on disk so the caller can
  * surface a precise error instead of failing later in spawn.
@@ -39,7 +42,7 @@ export function resolveAppshotHelperBinary(): string {
 	if (!existsSync(fullPath)) {
 		throw new Error(
 			`appshot helper binary not found at ${fullPath}. ` +
-				`Run 'node scripts/build-appshot-helper.js' in apps/desktop, or rebuild Vetta.app.`,
+				`Run 'node scripts/build-appshot-helper.js' in apps/desktop, or rebuild Atrix.app.`,
 		);
 	}
 

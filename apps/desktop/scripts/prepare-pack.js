@@ -323,7 +323,7 @@ if (process.platform === "darwin" && !macSigning.enabled) {
 	);
 }
 
-// macOS appshot: swiftc 编译 "Vetta Computer Use.app" 直接落到 staging appshot/，
+// macOS appshot: swiftc 编译 "Atrix Computer Use.app" 直接落到 staging appshot/，
 // 由 resolveExtraResources 带进 Resources/appshot/（filter "**/*" 递归带入
 // .app bundle 内部结构）。仅 darwin host 可编译。
 if (process.platform === "darwin") {
@@ -701,7 +701,7 @@ function resolveExtraResources() {
 			filter: sandboxFilters,
 		});
 	}
-	// "Vetta Computer Use.app" 仅 darwin 目标需要，且仅 darwin host 能编译（见上方 staging）。
+	// "Atrix Computer Use.app" 仅 darwin 目标需要，且仅 darwin host 能编译（见上方 staging）。
 	if (resolvePlatformFamilies().has("darwin") && process.platform === "darwin") {
 		extraResources.push({
 			from: "appshot",

@@ -5,7 +5,7 @@ description: On macOS, hold the same modifier key on both sides to attach the fo
 
 <Takeaways>
   <li>App Snapshot is macOS only and off by default</li>
-  <li>Capture runs in a separate Vetta Computer Use helper that needs its own permissions</li>
+  <li>Capture runs in a separate Atrix Computer Use helper that needs its own permissions</li>
   <li>A capture becomes an attachment; nothing is sent until you send it</li>
 </Takeaways>
 
@@ -29,7 +29,7 @@ Open **Settings → App Snapshot** (shown on macOS only).
   <Step>
     ### Authorize the helper
 
-    App Snapshot reads the foreground window through the separate **Vetta Computer Use** helper. The helper is its own permission subject, so authorizing the main Vetta app is not enough. If permissions are incomplete when you enable the feature, Vetta opens the setup window automatically; you can also click **Open permission setup** at any time and drag the icon into the system permission list.
+    App Snapshot reads the foreground window through the separate **Atrix Computer Use** helper. The helper is its own permission subject, so authorizing the main Vetta app is not enough. If permissions are incomplete when you enable the feature, Vetta opens the setup window automatically; you can also click **Open permission setup** at any time and drag the icon into the system permission list.
   </Step>
   <Step>
     ### Confirm the permission state
@@ -51,8 +51,8 @@ Open **Settings → App Snapshot** (shown on macOS only).
 
 | Permission | Subject | Effect when missing |
 | --- | --- | --- |
-| Accessibility | Vetta Computer Use | No window title, document path, or in-window text |
-| Screen Recording | Vetta Computer Use | No screenshot; only text and metadata remain |
+| Accessibility | Atrix Computer Use | No window title, document path, or in-window text |
+| Screen Recording | Atrix Computer Use | No screenshot; only text and metadata remain |
 | Input Monitoring | Vetta | The gesture never fires and nothing responds |
 
 When both helper permissions are missing, Vetta brings the main window forward and points you to permission settings instead of producing an attachment. When only one is missing, it still captures the other half.

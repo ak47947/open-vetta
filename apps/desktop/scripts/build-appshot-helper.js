@@ -1,9 +1,9 @@
-// 把 native/appshot/main.swift 编译打包成 `Vetta Computer Use.app`（swiftc 单文件
+// 把 native/appshot/main.swift 编译打包成 `Atrix Computer Use.app`（swiftc 单文件
 // 编译到 Contents/MacOS/、写 Info.plist、拷贝主 app icns、ad-hoc 签名）。
 //
 // 独立 .app bundle（独立 CFBundleIdentifier）使其在 macOS TCC（辅助功能/屏幕
-// 录制）里是与主 Vetta app 分离的授权主体，系统设置权限列表显示为
-// "Vetta Computer Use"。
+// 录制）里是与主 Atrix app 分离的授权主体，系统设置权限列表显示为
+// "Atrix Computer Use"。
 //
 // darwin-only：非 macOS host 直接跳过（appshot 功能本身仅 macOS 提供）。
 // 幂等：产物已存在且可执行文件 mtime 晚于源码时跳过编译，加速 dev 启动与迭代构建。
@@ -14,15 +14,19 @@
 //          与 src/main/appshot/helper-resolver.ts 保持一致）。
 
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const projectRoot = join(import.meta.dirname, "..");
 const sourcePath = join(projectRoot, "native", "appshot", "main.swift");
 const iconSourcePath = join(projectRoot, "build", "icon.icns");
 
-const APP_NAME = "Vetta Computer Use";
+const APP_NAME = "Atrix Computer Use";
+// 内部授权标识保持上游原值：TCC 授权与 bundle id 绑定，改名会让已授权用户的
+// 授权失效；系统设置里展示的名字取自 CFBundleDisplayName / bundle 文件名。
 const BUNDLE_ID = "com.vetta.desktop.computer-use";
+// 品牌重塑前产出的旧 bundle 名，编译前清理，避免 dev 目录里新旧两份并存。
+const LEGACY_APP_NAMES = ["Vetta Computer Use"];
 
 function resolveOutDir() {
 	const outIndex = process.argv.indexOf("--out");
@@ -56,10 +60,19 @@ function infoPlistContents() {
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>Vetta Computer Use needs to record your screen to capture the active window for the assistant.</string>
+	<string>${APP_NAME} needs to record your screen to capture the active window for the assistant.</string>
 </dict>
 </plist>
 `;
+}
+
+function removeLegacyBundles(outDir) {
+	for (const name of LEGACY_APP_NAMES) {
+		const legacyBundlePath = join(outDir, `${name}.app`);
+		if (!existsSync(legacyBundlePath)) continue;
+		console.log(`[build-appshot-helper] removing legacy bundle: ${legacyBundlePath}`);
+		rmSync(legacyBundlePath, { recursive: true, force: true });
+	}
 }
 
 function main() {
@@ -77,6 +90,8 @@ function main() {
 	const macosDir = join(contentsDir, "MacOS");
 	const resourcesDir = join(contentsDir, "Resources");
 	const executablePath = join(macosDir, APP_NAME);
+
+	removeLegacyBundles(outDir);
 
 	if (
 		existsSync(executablePath) &&
