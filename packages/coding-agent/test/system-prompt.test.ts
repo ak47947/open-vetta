@@ -24,7 +24,7 @@ describe("VETTA_CLI_GUIDANCE", () => {
 	});
 
 	test("keeps secrets out of the conversation by routing inspection through query actions", () => {
-		expect(VETTA_CLI_GUIDANCE).toContain("never by reading Vetta's config files");
+		expect(VETTA_CLI_GUIDANCE).toContain("never by reading Atrix's config files");
 		expect(VETTA_CLI_GUIDANCE).toContain("plaintext secrets");
 	});
 });
