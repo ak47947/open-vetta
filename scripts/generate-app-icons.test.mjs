@@ -4,9 +4,13 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { inflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
+import { APP_ICON_DEFAULT, APP_ICON_IDS } from "../apps/desktop/src/shared/app-icon.ts";
 
 const root = resolve(import.meta.dirname, "..");
 const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+const desktopVariants = APP_ICON_IDS.filter((id) => id !== APP_ICON_DEFAULT);
+const desktopBuildIcons = "apps/desktop/build/app-icons";
+const desktopPreviews = "apps/desktop/src/renderer/domains/settings/assets/app-icons";
 
 function pngInfo(data) {
 	expect(data.subarray(0, 8)).toEqual(pngSignature);
@@ -127,9 +131,29 @@ function checkOutputs(directory) {
 	expect(offset).toBe(icns.length);
 }
 
+function checkDesktopVariants(directory) {
+	const previews = new Set();
+	for (const id of desktopVariants) {
+		const preview = readFileSync(join(directory, desktopPreviews, `${id}.png`));
+		const square = readFileSync(join(directory, desktopBuildIcons, `${id}.png`));
+		expect(preview.equals(square), `${id} preview matches the packaged artwork`).toBe(true);
+		expect(pngInfo(preview), `${id} preview`).toEqual({ width: 512, height: 512, colorType: 2 });
+		previews.add(preview.toString("base64"));
+		for (const [suffix, size] of [["mac", 1024], ["round", 512]]) {
+			const path = join(directory, desktopBuildIcons, `${id}-${suffix}.png`);
+			expect(pngInfo(readFileSync(path)), path).toEqual({ width: size, height: size, colorType: 6 });
+		}
+	}
+	expect(previews.size).toBe(desktopVariants.length);
+}
+
 describe("application icon assets", () => {
 	it("ships valid icons for every desktop and mobile platform", () => {
 		checkOutputs(root);
+	});
+
+	it("ships distinct choices with matching artwork in settings and both runtime formats", () => {
+		checkDesktopVariants(root);
 	});
 
 	it("preserves the blue emblem, ice background, and platform transparency masks", () => {
@@ -191,10 +215,22 @@ describe("application icon assets", () => {
 				expect(result.error).toBeUndefined();
 				expect(result.status, result.stderr).toBe(0);
 				checkOutputs(destination);
+				checkDesktopVariants(destination);
 				// The shipped application and generated outputs must use the same master.
 				expect(readFileSync(join(destination, "apps/desktop/build/icon.png"))).toEqual(
 					readFileSync(join(root, "apps/desktop/build/icon.png")),
 				);
+				for (const id of desktopVariants) {
+					for (const path of [
+						`${desktopPreviews}/${id}.png`,
+						`${desktopBuildIcons}/${id}.png`,
+						`${desktopBuildIcons}/${id}-mac.png`,
+						`${desktopBuildIcons}/${id}-round.png`,
+					]) {
+						const generated = readFileSync(join(destination, path));
+						expect(generated.equals(readFileSync(join(root, path))), path).toBe(true);
+					}
+				}
 			} finally {
 				rmSync(destination, { recursive: true, force: true });
 			}

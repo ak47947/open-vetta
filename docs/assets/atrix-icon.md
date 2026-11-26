@@ -1,6 +1,6 @@
 # Atrix 应用图标
 
-本次选用钴蓝三段环形标志与冰白底色。透明母版为 [atrix-icon-master.png](./atrix-icon-master.png)，所有平台图标均由它生成；不要手工修改导出文件。
+Atrix 的默认图标采用钴蓝三段环形标志与冰白底色。下列平台资源以 [atrix-icon-master.png](./atrix-icon-master.png) 为透明母版，请通过脚本更新导出文件。
 
 ## 重新生成
 
@@ -11,16 +11,17 @@ swift scripts/generate-app-icons.swift
 bun scripts/quality/run-vitest.mjs --run scripts/generate-app-icons.test.mjs
 ```
 
-母版必须是至少 1024 × 1024 的正方形透明 PNG，并保留当前画布留白。统一底色为 `#EFF4FA`；蓝色保留母版中的折叠明暗。
+母版必须是至少 1024 × 1024 的正方形透明 PNG，并保留当前画布留白。默认底色为 `#EFF4FA`。各款图标均保留母版的蓝色和折叠明暗。
 
 生成范围：
 
 - Desktop：`build/icon.png`、`icon-dock.png`、`icon.ico`、`icon.icns` 与 Renderer 的 `public/icon.png`。macOS 版本含透明外边距和圆角，Windows ICO 覆盖 16–256 像素，ICNS 覆盖 16–1024 像素。
+- Desktop 可选图标：16 款配色和主题图标。每款导出 `build/app-icons/` 下的 512 像素方图、1024 像素 macOS Dock 图和 512 像素 Windows/Linux 圆角图。设置页使用同一份方图作为缩略图。配色和主题徽记在生成脚本中维护。
 - iOS：1024 像素、无透明通道、无预裁圆角的 `AppIcon.png`，由系统施加遮罩。
 - Android：五档密度的普通、圆形及自适应图标；前景与底色分离，标志位于安全区域；通知和快捷设置图标使用同一标志的白色透明版本。
 - 文档站：`public/images/atrix-app-icon.png` 与 `public/favicon.png`。
 
-生成器只更新上述图标资源，不修改应用标识、协议、配置或桌宠素材。测试会检查各端尺寸、iOS 透明通道限制、ICO/ICNS 帧和从母版导出的完整流程；macOS 以外跳过依赖系统图像框架的重新生成用例，资源合同检查仍然运行。
+设置页的默认图标和 macOS Icon Composer 的默认图层分别维护。测试检查各端尺寸、iOS 透明通道限制、ICO/ICNS 帧、可选图标与预览的一致性，以及从母版重新导出的结果。重新导出测试在 macOS 上运行，资源检查可在各平台运行。
 
 ## 生成来源与提示词
 

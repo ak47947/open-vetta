@@ -17,8 +17,8 @@ describe("app-icon", () => {
 		expect(normalizeAppIconId("dark")).toBe("dark");
 	});
 
-	it("眼镜水滴的红、黑、浅色底版都是可选风格", () => {
-		for (const id of ["red", "black", "light"]) expect(normalizeAppIconId(id)).toBe(id);
+	it("配色款保留既有 id，包括雪白款的历史 id", () => {
+		for (const id of ["red", "black", "light", "ermine"]) expect(normalizeAppIconId(id)).toBe(id);
 	});
 
 	it("除默认外，每个图标都有打包进应用的图片和设置页预览图", () => {
