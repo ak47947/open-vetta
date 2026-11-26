@@ -1,4 +1,6 @@
+import type { ComponentType } from "react";
 import type { ConversationMessage, ConversationState, PluginConversationApi } from "./conversation.js";
+import type { PluginModelPickerProps } from "./model-picker.js";
 import type { PluginPromptAttachment } from "./prompt-attachment.js";
 import type { PluginSidebarState } from "./ui.js";
 
@@ -18,6 +20,8 @@ export interface PluginHostBridge {
 	useLocale(): string;
 	/** Reactive: the host sidebar's current shape (collapsed / narrow / visible). */
 	useSidebarState(): PluginSidebarState;
+	/** 宿主的模型选择器（与会话输入栏同一个），由 {@link ModelPicker} 渲染。 */
+	ModelPicker: ComponentType<PluginModelPickerProps>;
 	conversation: PluginConversationApi;
 }
 
@@ -30,7 +34,7 @@ export function __setPluginHostBridge(bridge: PluginHostBridge): void {
 /** Package-internal: throws if the host has not installed the bridge yet. */
 export function requireBridge(): PluginHostBridge {
 	if (!hostBridge) {
-		throw new Error("Vetta plugin host bridge is not installed");
+		throw new Error("Atrix plugin host bridge is not installed");
 	}
 	return hostBridge;
 }

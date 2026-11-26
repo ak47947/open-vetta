@@ -1,5 +1,6 @@
 import { MessageInput } from "@vetta-org/theme-ui/chat/MessageInputView";
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
+import { ModelSelectorFooterProvider, type ModelSelectorFooterValue } from "../model-selector-footer";
 import { InputBarMention } from "./InputBarMention";
 import {
 	InputBarActiveActions,
@@ -16,6 +17,15 @@ import type { InputBarModel } from "./types";
 export function InputBarLeadingActions({ model }: { readonly model: InputBarModel }): JSX.Element {
 	const commands = model.commands;
 	const slashOpen = commands?.slashOpen ?? false;
+	const attachmentsVisible = !commands || commands.slashOpen;
+	/**
+	 * 竖线只用来分组：右侧没有任何可见控件时就撤掉，避免留下悬空的断线。
+	 * 已激活的胶囊、工具栏里的执行模式、命令面板展开后的图片/附件按钮都算右侧内容。
+	 */
+	const dividerVisible =
+		attachmentsVisible ||
+		model.activeActions.length > 0 ||
+		(!model.executionModeInModelMenu && model.leadingTools.length > 0);
 	return (
 		<>
 			{/*
@@ -33,19 +43,21 @@ export function InputBarLeadingActions({ model }: { readonly model: InputBarMode
 			{model.routing ? (
 				<InputBarMention model={model.routing} disabled={!model.hasSession} visible={!slashOpen} />
 			) : null}
-			{commands ? <InputBarToolbarDivider /> : null}
+			{commands && dividerVisible ? <InputBarToolbarDivider /> : null}
 			{/* 两组控件保持挂载、只切 display，避免展开动画首帧重建复杂 selector。 */}
 			<InputBarAttachmentActions
 				disabled={!model.hasSession}
-				visible={!commands || commands.slashOpen}
+				visible={attachmentsVisible}
 				addImageTitle={model.labels.toolbar.addImage}
 				attachFileTitle={model.labels.toolbar.attachFile}
 				onSelectFiles={() => void model.actions.handleSelectFiles()}
 				onSelectImages={() => void model.actions.handleSelectImages()}
 			/>
-			{model.leadingTools.map((tool) => (
-				<InputBarExecutionModeAction key={tool.kind} visible={!slashOpen} model={tool.model} />
-			))}
+			{model.executionModeInModelMenu
+				? null
+				: model.leadingTools.map((tool) => (
+						<InputBarExecutionModeAction key={tool.kind} visible={!slashOpen} model={tool.model} />
+					))}
 			<InputBarActiveActions
 				items={model.activeActions}
 				removeHint={model.labels.capsule.removeDefault}
@@ -85,13 +97,23 @@ export function InputBarToolbar({
 	readonly model: InputBarModel;
 	readonly children: ReactNode;
 }): JSX.Element {
+	const slashOpen = model.commands?.slashOpen ?? false;
+	const footer = useMemo<ModelSelectorFooterValue | null>(
+		() =>
+			model.executionModeInModelMenu
+				? { executionMode: model.leadingTools.find((tool) => tool.kind === "execution-mode")?.model, active: !slashOpen }
+				: null,
+		[model.executionModeInModelMenu, model.leadingTools, slashOpen],
+	);
 	return (
 		<>
 			<MessageInput.ToolbarLeading>
 				<InputBarLeadingActions model={model} />
 			</MessageInput.ToolbarLeading>
 			<MessageInput.ToolbarTrailing>
-				<div className={model.commands?.slashOpen ? "hidden" : "min-w-0 shrink"}>{children}</div>
+				<div className={slashOpen ? "hidden" : "min-w-0 shrink"}>
+					<ModelSelectorFooterProvider value={footer}>{children}</ModelSelectorFooterProvider>
+				</div>
 				<InputBarTrailingActions model={model} />
 			</MessageInput.ToolbarTrailing>
 		</>

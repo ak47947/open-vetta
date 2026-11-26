@@ -18,7 +18,6 @@ export interface ShortcutsSettingsViewProps {
 	readonly aiAssistSlot: ReactNode;
 	readonly onResetAll: () => void;
 	readonly shortcutActions: readonly ShortcutActionRowView[];
-	readonly quickPanelSection: ReactNode;
 }
 
 export function ShortcutsSettingsView({
@@ -30,7 +29,6 @@ export function ShortcutsSettingsView({
 	aiAssistSlot,
 	onResetAll,
 	shortcutActions,
-	quickPanelSection,
 }: ShortcutsSettingsViewProps): JSX.Element {
 	return (
 		<div className="mx-auto w-full max-w-[680px] px-8 pt-2 pb-4">
@@ -38,7 +36,7 @@ export function ShortcutsSettingsView({
 				<h1 className="text-[20px] font-bold text-foreground">{title}</h1>
 				<div className="flex flex-wrap items-center gap-2">
 					{aiAssistSlot}
-					<Button variant="secondary" size="sm" onClick={onResetAll}>
+					<Button variant="field" onClick={onResetAll}>
 						<span className="icon-[mdi--restore] h-3.5 w-3.5" />
 						{resetAllLabel}
 					</Button>
@@ -57,8 +55,6 @@ export function ShortcutsSettingsView({
 					</SettingRow>
 				))}
 			</SettingSection>
-
-			{quickPanelSection}
 
 			<p className="mt-4 text-[12px] leading-relaxed text-muted-foreground/50">{shortcutHint}</p>
 		</div>

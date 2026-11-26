@@ -44,6 +44,7 @@ const cliAppCompileTargets = {
 	"darwin-x64": { platformTag: "darwin-x64", bunTarget: "bun-darwin-x64", binaryName: "vetta" },
 	"linux-arm64": { platformTag: "linux-arm64", bunTarget: "bun-linux-arm64", binaryName: "vetta" },
 	"linux-x64": { platformTag: "linux-x64", bunTarget: "bun-linux-x64", binaryName: "vetta" },
+	"win32-arm64": { platformTag: "win32-arm64", bunTarget: "bun-windows-arm64", binaryName: "vetta.exe" },
 	"win32-x64": { platformTag: "win32-x64", bunTarget: "bun-windows-x64", binaryName: "vetta.exe" },
 };
 const imGatewayTargetByPlatformTag = {
@@ -51,6 +52,7 @@ const imGatewayTargetByPlatformTag = {
 	"darwin-x64": { arch: "amd64", os: "darwin" },
 	"linux-arm64": { arch: "arm64", os: "linux" },
 	"linux-x64": { arch: "amd64", os: "linux" },
+	"win32-arm64": { arch: "arm64", os: "windows" },
 	"win32-x64": { arch: "amd64", os: "windows" },
 };
 
@@ -176,10 +178,9 @@ function resolveSandboxResourceFilters() {
 // createRequire 真能 resolve 到，恢复图片缩放路径。photon-node 是纯 WASM、
 // 无平台二进制差异，可安全跨平台打包。
 //
-// uiohook-napi（快捷面板双击功能键全局监听）、electron-liquid-glass（macOS
-// 液态/磨砂玻璃）与 sherpa-onnx-win-x64（Windows 语音输入）同为被 external 的运行时原生模块，必须复制进 staging，
-// 否则 packaged 环境 require 不到。uiohook 各平台都有 prebuild、需全平台带；
-// electron-liquid-glass 是 darwin-only，Sherpa 是 win32-x64-only；依赖策略按目标产物平台选择，
+// uiohook-napi（应用快照双键同按全局监听）与 sherpa-onnx-win-x64（Windows 语音输入）同为被 external
+// 的运行时原生模块，必须复制进 staging，否则 packaged 环境 require 不到。uiohook 各平台都有 prebuild、
+// 需全平台带；Sherpa 是 win32-x64-only；依赖策略按目标产物平台选择，
 // 不按构建主机选择，避免把另一个系统的原生包带入产物。
 const packagedNativeDependencies = resolvePackagedNativeDependencies(resolvePlatformFamilies(), {
 	speechInputEnabled: speechInputBuildConfig.enabled,
@@ -190,8 +191,7 @@ const optionalExternalDeps = packagedNativeDependencies.optional;
 // Copy an external dep plus its full production-dependency closure into the
 // staged node_modules. app-builder-lib 26's bun collector walks each package's
 // declared `dependencies` and hard-fails when one is missing from the staged
-// tree (e.g. uiohook-napi → node-gyp-build, electron-liquid-glass → bindings /
-// node-addon-api). Transitive deps are nested under the owner's node_modules so
+// tree (e.g. uiohook-napi → node-gyp-build). Transitive deps are nested under the owner's node_modules so
 // both the collector and runtime require() resolve them; the asarUnpack glob
 // `node_modules/<dep>/**/*` then unpacks them alongside the native module.
 function stageDepTree(dep, sourceDir, destDir, seen = new Set()) {
@@ -645,6 +645,22 @@ stageSystemPluginsFromArchives(join(buildStageDir, "system-plugins"), "prepare-p
 stageSystemThemesFromArchives(join(buildStageDir, "system-themes"), "prepare-pack");
 stageSystemSkills(join(buildStageDir, "system-skills"), "prepare-pack");
 
+// =============================================================================
+// 当前版本发布说明（extraResources）
+// =============================================================================
+//
+// 「查看当前版本功能」离线读取 Resources/release-notes/v<版本>.md，内容与 GitHub Release
+// 正文一致。缺文件（如 QA 覆盖版本号）只告警：对话框会显示「暂无版本介绍」，不阻断打包。
+const stagedReleaseNotesDir = join(buildStageDir, "release-notes");
+rmSync(stagedReleaseNotesDir, { recursive: true, force: true });
+mkdirSync(stagedReleaseNotesDir, { recursive: true });
+const releaseNoteSource = join(projectRoot, "..", "..", ".github", "release-notes", `v${appVersion}.md`);
+if (existsSync(releaseNoteSource)) {
+	cpSync(releaseNoteSource, join(stagedReleaseNotesDir, `v${appVersion}.md`));
+} else {
+	console.warn(`[prepare-pack] release note not found, skipping: ${releaseNoteSource}`);
+}
+
 function resolveExtraResources() {
 	const extraResources = [
 		{
@@ -685,6 +701,11 @@ function resolveExtraResources() {
 		{
 			from: "system-themes",
 			to: "system-themes",
+			filter: ["**/*"],
+		},
+		{
+			from: "release-notes",
+			to: "release-notes",
 			filter: ["**/*"],
 		},
 		{
@@ -741,7 +762,9 @@ const builderConfig = {
 	mac: {
 		target: ["dmg", "zip"],
 		category: "public.app-category.productivity",
-		icon: "build/icon.icns",
+		// .icon 是 Icon Composer 产物：打包时 actool 编出 Assets.car，由系统绘制 macOS 26 的玻璃高光与遮罩，
+		// 同时生成 icns 给旧系统兜底。需要 Xcode 26+。
+		icon: "build/icon.icon",
 		// 签名/公证开关由 resolveMacSigning() 按环境变量决定（见
 		// docs/deploy/apple-code-signing.md）：凭据齐全 → Developer ID 签名 +
 		// hardened runtime + 公证；一个都不设 → 维持未签名产物，配套 DMG 里的
@@ -831,9 +854,9 @@ const builderConfig = {
 	// 上偶尔出问题（photon.ts 已经有 fallback paths 兜底，但能避免就避免）。
 	// 直接 unpack 到 app.asar.unpacked/，让 wasm 落到真实文件系统。
 	//
-// uiohook-napi / electron-liquid-glass / Sherpa-ONNX 加载预编译 .node。
+// uiohook-napi / Sherpa-ONNX 加载预编译 .node。
 	// dlopen 无法从 asar 虚拟文件系统加载原生模块，必须整包 unpack 到真实磁盘，
-	// 否则 packaged 环境 require 即失败（electron-liquid-glass 仅 mac 包内存在）。
+	// 否则 packaged 环境 require 即失败。
 	//
 	// OCR runner 包含稳定且可高度压缩的 WASM / ONNX 资源。将其放入
 	// app.asar.unpacked 后 Electron 仍可透明读取，同时 Windows Inno 能按文件

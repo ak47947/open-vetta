@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Install deps, bump patch, vite build, and create a Vetta plugin package.
+ * Install deps, bump patch, vite build, and create a Atrix plugin package.
  * Uses managed Node/npm (ADR-0011). Does not assume bun.
  *
  * Usage: node build-and-pack.mjs <pluginRoot> [--skip-install] [--no-bump]

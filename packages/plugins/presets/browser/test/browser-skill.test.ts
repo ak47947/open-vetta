@@ -14,7 +14,7 @@ describe("Browser Use skill", () => {
 		expect(skill).not.toContain("browser_operate");
 	});
 
-	it("bootstraps only the pinned Vetta-managed runtime before browser operations", async () => {
+	it("bootstraps only the pinned Atrix-managed runtime before browser operations", async () => {
 		const skill = await readFile(resolve(import.meta.dirname, "../agent/skills/browser-use/SKILL.md"), "utf8");
 		expect(skill).toContain(`npm install --global agent-browser@${AGENT_BROWSER_VERSION} --engine-strict=false`);
 		expect(skill).toContain("npm_config_prefix");

@@ -297,7 +297,7 @@ func (c *feishuBindCoordinator) emitBindStatus(status, errMsg string) {
 // in-memory credentials so the next build parks in awaiting_bind.
 //
 // The app itself is left alone on the Feishu Open Platform: only its owner
-// can delete it there, and a user who unbinds in Vetta may well want to
+// can delete it there, and a user who unbinds in Atrix may well want to
 // keep (or re-enter) the same app later.
 func (c *feishuBindCoordinator) LogoutAndClear(reason string) error {
 	c.Cancel()

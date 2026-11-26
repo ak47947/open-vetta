@@ -1,5 +1,4 @@
 import { PET_ACTIONS, type PetActionId } from "../../../../shared/pet-actions";
-import { normalizePetBubbleStyleId, type PetBubbleStyleId } from "../../../../shared/pet-bubbles";
 import {
 	DEFAULT_PET_VIDEO_SCALE,
 	normalizePetVideoScale,
@@ -31,15 +30,6 @@ export function getVideoMap(): PetVideoMap {
 	return videos;
 }
 
-export function getInitialBubbleStyle(): { styleId: PetBubbleStyleId; decorUrl?: string } {
-	const params = getSearchParams();
-	const decorUrl = params.get("bubbleDecor");
-	return {
-		styleId: normalizePetBubbleStyleId(params.get("bubbleStyle")),
-		...(decorUrl && decorUrl.length > 0 ? { decorUrl } : {}),
-	};
-}
-
 export function getInitialAutoMode(): boolean {
 	return getSearchParams().get("autoMode") !== "false";
 }
@@ -65,20 +55,4 @@ export function getInitialVideoBaseSizeByAction(): PetVideoBaseSizeByAction {
 
 export function getInitialAction(videos: PetVideoMap): PetActionId | undefined {
 	return pickIdleAction(videos);
-}
-
-/** 窗口贴顶时 y<0，气泡改到精灵下方。位置由主进程窗口 bounds 承担，不再做 CSS 平移。 */
-export function getInitialContentOffset(): { x: number; y: number } {
-	const params = getSearchParams();
-	const x = Number(params.get("contentOffsetX"));
-	const y = Number(params.get("contentOffsetY"));
-	if (Number.isFinite(x) && Number.isFinite(y)) {
-		return { x: Math.round(x), y: Math.round(y) };
-	}
-	const margin = 24;
-	const halfSize = 110;
-	return {
-		x: Math.round(window.innerWidth / 2 - halfSize - margin),
-		y: Math.round(window.innerHeight / 2 - halfSize - margin),
-	};
 }

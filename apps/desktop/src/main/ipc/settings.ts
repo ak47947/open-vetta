@@ -1,7 +1,6 @@
 import { ipcMain } from "electron";
 import { getModelTransport, setModelTransport } from "../agent-settings/model-transport-settings.js";
 import { readAgentSettingsDocument, updateAgentSettingsDocument } from "../agent-settings/settings-document-store.js";
-import { DEFAULT_SERVER_URL, DEFAULT_SITE_URL } from "../constants.js";
 import {
 	listPresetProviders,
 	refreshPresetCatalog,
@@ -30,20 +29,12 @@ export function updateSettings(mutate: (settings: Record<string, unknown>) => vo
 }
 
 export function registerSettingsIpc(): () => void {
-	// 清理 settings.json 中残留的 serverUrl，现在统一由环境变量管理
+	// 一次性清理旧版本写入 settings.json 的 serverUrl（服务端已下线，ADR-0156）。
 	if ("serverUrl" in readSettings()) {
 		updateSettings((settings) => {
 			delete settings.serverUrl;
 		});
 	}
-
-	ipcMain.handle("vetta:settings:get-server-url", () => {
-		return DEFAULT_SERVER_URL;
-	});
-
-	ipcMain.handle("vetta:settings:get-site-url", () => {
-		return DEFAULT_SITE_URL;
-	});
 
 	ipcMain.handle("vetta:settings:get-model-transport", () => getModelTransport());
 
@@ -55,12 +46,19 @@ export function registerSettingsIpc(): () => void {
 	});
 
 	// 手动刷新某预设服务商的模型列表:只拉不写,由渲染层连同 key 一起落盘。
-	ipcMain.handle("vetta:models:refresh-preset-models", async (_event, providerId: unknown, apiKey: unknown) => {
-		if (typeof providerId !== "string" || !providerId.trim()) {
-			return { models: [], error: { code: "unknown-provider", params: { provider: String(providerId) } } };
-		}
-		return refreshPresetModels(providerId.trim(), typeof apiKey === "string" ? apiKey : undefined);
-	});
+	ipcMain.handle(
+		"vetta:models:refresh-preset-models",
+		async (_event, providerId: unknown, apiKey: unknown, baseUrl: unknown) => {
+			if (typeof providerId !== "string" || !providerId.trim()) {
+				return { models: [], error: { code: "unknown-provider", params: { provider: String(providerId) } } };
+			}
+			return refreshPresetModels(
+				providerId.trim(),
+				typeof apiKey === "string" ? apiKey : undefined,
+				typeof baseUrl === "string" ? baseUrl : undefined,
+			);
+		},
+	);
 
 	// 手动刷新公共目录:清掉失败冷却强制重拉,错误原样回给渲染层。
 	ipcMain.handle("vetta:models:refresh-preset-catalog", async () => {

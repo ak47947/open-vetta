@@ -118,6 +118,16 @@ export type {
 	GuideBadgeViewItem,
 } from "./GuideBadgeSwiperView";
 export { GuideBadgeSwiperView } from "./GuideBadgeSwiperView";
+export type {
+	HeaderActionBarItem,
+	HeaderActionBarLabels,
+	HeaderActionBarViewProps,
+	HeaderActionBehavior,
+	HeaderActionPopoverApi,
+	HeaderActionTone,
+	HeaderActionZone,
+} from "./HeaderActionBarView";
+export { HeaderActionBarView, headerActionToneBadgeClass, LABELED_TOP_ACTIONS_MAX } from "./HeaderActionBarView";
 export { InlineModelPicker } from "./InlineModelPicker";
 export type { InlineTokenChipProps } from "./InlineTokenChip";
 export { InlineTokenChip } from "./InlineTokenChip";
@@ -295,12 +305,14 @@ export {
 export type { ModelConfigurationGroup, ModelConfigurationMember } from "./ModelConfiguration";
 export { ModelConfigurationOverview, ModelConfigurationPopover } from "./ModelConfiguration";
 export type {
+	ModelSelectorFavorites,
 	ModelSelectorLabels,
 	ModelSelectorOptionView,
 	ModelSelectorProviderGroup,
+	ModelSelectorTriggerVariant,
 	ModelSelectorViewProps,
 } from "./ModelSelectorView";
-export { ModelSelectorView } from "./ModelSelectorView";
+export { ModelSelectorView, ModelVisionIcon } from "./ModelSelectorView";
 export type {
 	NewSessionGuidingWordsGroup,
 	NewSessionGuidingWordsProps,

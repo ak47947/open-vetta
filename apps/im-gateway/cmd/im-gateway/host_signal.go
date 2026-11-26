@@ -18,7 +18,7 @@ import (
 const accountLookupTimeout = 30 * time.Second
 
 // signalDeviceName is what shows up in Signal → Settings → Linked devices.
-const signalDeviceName = "Vetta"
+const signalDeviceName = "Atrix"
 
 // signalManaged reports whether the slot asks the sidecar to run signal-cli
 // itself. An explicit Endpoint means the user runs their own daemon and we
@@ -186,10 +186,10 @@ func (c *signalBindCoordinator) emitBindStatus(status, errMsg string) {
 // registration so the next start goes back to awaiting_bind.
 //
 // The account data is only deleted when the config directory belongs to us
-// (OwnsConfigDir — the desktop app creates a Vetta-private signal-cli
+// (OwnsConfigDir — the desktop app creates a Atrix-private signal-cli
 // directory). Pointed at a directory the user manages themselves, we merely
 // stop using it: wiping someone's own signal-cli install because they
-// clicked "unbind" in Vetta would be destructive far beyond this app.
+// clicked "unbind" in Atrix would be destructive far beyond this app.
 func (c *signalBindCoordinator) LogoutAndClear(reason string) error {
 	c.Cancel()
 	if c.cfg.OwnsConfigDir && c.cfg.ConfigDir != "" {

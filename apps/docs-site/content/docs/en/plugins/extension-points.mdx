@@ -24,6 +24,7 @@ Every `ctx.ui` registration maps to its own permission:
 | Activity panel tab | `registerActivityTab`, `openActivityTab`, `setActivityTabVisible` | `ui.slot.activity-tab` |
 | Composer action and attachment | `registerInputAction`, `setPromptAttachment` | `ui.slot.input-action` |
 | New-session context block | `registerNewSessionContext` | `ui.slot.new-session-context` |
+| Conversation header action (declarative; users can stow and drag) | `registerHeaderAction` | `ui.slot.header-action` |
 | Message card renderer | `registerCardRenderer` | `ui.slot.message` |
 | Inline tool-call rendering | `registerToolCallSlot` | `ui.slot.tool-call` |
 | Turn card | `registerTurnCard` | `ui.slot.turn-card` |
@@ -32,6 +33,8 @@ Every `ctx.ui` registration maps to its own permission:
 | Open the system browser | `openExternal` | `shell.openExternal` |
 
 Components use the host's shared React runtime and design tokens. Registration functions return a `Disposable`; release it during deactivation so reloads do not register the same UI twice.
+
+A header action (`registerHeaderAction`) can carry both state and a way in: `label` puts text such as the current branch next to the icon, `tone` gives the badge and icon a semantic colour, menu items can declare `checkbox` / `radio` / section labels / loading and empty rows / a single submenu level, and the popover can pick a width (`size`) or upgrade to a host dialog (`host: "dialog"`). `surfaces` decides whether the action appears on the conversation page or the new-session page, and `pin: "prefer"` gives “state that must be visible” a default seat in the header for users who never customised their layout. These fields require Plugin API `^2.11.0`; the full contract lives in `docs/plugin/ui-slots.md`.
 
 <Callout title="Style through className only" type="warn">
   A plugin shares one page with the host. Element selectors such as `button`, `div`, or `*` in a stylesheet entry leak into the whole interface, and they leak only on the user's machine. `@vetta-org/plugin-vite` scopes plugin CSS to the plugin root and wires in the host theme tokens, so semantic classes such as `text-foreground` and `bg-card` work directly.
@@ -120,7 +123,7 @@ Registration points differ in how they treat "declared but not granted", and the
 | Behaviour | Registration points |
 | --- | --- |
 | Throws `Plugin permission denied` and aborts the call | `registerInputAction`, `registerCardRenderer`, `registerToolCallSlot`, `registerTurnCard`, `registerShortcutScope`, `openActivityTab`, `setActivityTabVisible`, `setPromptAttachment`, `fileExplorer.*`, `registerSystemPromptProvider`, `registerContinuationProvider`, `conversation.*`, `fs.*`, `network.*`, `storage.*`, `media.*`, `ai.*`, `command.run` |
-| Skips the contribution with a console warning, leaving other capabilities intact | `registerGlobalSlot`, `registerFilePreview`, `registerActivityTab`, `registerNewSessionContext`, `agent.registerTool`, `agent.registerHook`, `appActions.register` |
+| Skips the contribution with a console warning, leaving other capabilities intact | `registerGlobalSlot`, `registerFilePreview`, `registerActivityTab`, `registerNewSessionContext`, `registerHeaderAction`, `agent.registerTool`, `agent.registerHook`, `appActions.register` |
 
 <Callout title="Keep optional registrations independent" type="info">
   One missing permission should not take down the rest of the plugin. Keep each registration in `activate()` independent so a single throw does not abort the whole initialisation, and use `ctx.permissions.has()` to check before registering optional surfaces.

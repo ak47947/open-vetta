@@ -1,24 +1,41 @@
-import { useCursorStyle } from "@shared/hooks/useCustomCursor";
+import { useAppIcon } from "@shared/hooks/useAppIcon";
+import { useChatBackground } from "@shared/hooks/useChatBackground";
 import { useHeroOrnament } from "@shared/hooks/useHeroOrnament";
 import { useLanguage } from "@shared/hooks/useLanguage";
-import { useNarrowScreen } from "@shared/hooks/useNarrowScreen";
 import { useNewSessionTexture } from "@shared/hooks/useNewSessionTexture";
-import { useSidebarStyle } from "@shared/hooks/useSidebarStyle";
 import { useTheme } from "@shared/hooks/useTheme";
+import { useUiZoom } from "@shared/hooks/useUiZoom";
 import type { ThemeMode } from "@shared/store/atoms";
-import { type CursorStyle, STOAT_CURSOR_PREVIEW_URL } from "@shared/theme/cursor";
+import { CHAT_BACKGROUND_CATALOG, type ChatBackgroundId } from "@shared/theme/chat-background";
 import { NEW_SESSION_TEXTURE_CATALOG, type NewSessionTextureId } from "@shared/theme/new-session-texture";
 import { ORNAMENT_CATALOG, type OrnamentId } from "@shared/theme/ornament";
 import { useThemeRuntime } from "@shared/theme/runtime";
-import type { SidebarStyle } from "@shared/theme/sidebar-style";
 import { THEMES } from "@shared/theme/themes";
 import type { ThemeDef } from "@shared/theme/tokens";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { APP_ICON_IDS, type AppIconId } from "@/shared/app-icon";
 import { isAppearanceUiThemeEnabled } from "@/shared/feature-flags";
 import type { LanguagePreference } from "@/shared/i18n/config";
+import { UI_ZOOM_DEFAULT, UI_ZOOM_STEPS, uiZoomStepIndex } from "@/shared/ui-zoom";
+import appIconBinaryPreview from "../assets/app-icons/binary.png";
+import appIconBlackPreview from "../assets/app-icons/black.png";
+import appIconCodingPreview from "../assets/app-icons/coding.png";
+import appIconCookPreview from "../assets/app-icons/cook.png";
+import appIconDarkPreview from "../assets/app-icons/dark.png";
+import appIconDefaultPreview from "../assets/app-icons/default.png";
+import appIconDesignPreview from "../assets/app-icons/design.png";
+import appIconErminePreview from "../assets/app-icons/ermine.png";
+import appIconGamePreview from "../assets/app-icons/game.png";
+import appIconLightPreview from "../assets/app-icons/light.png";
+import appIconReadPreview from "../assets/app-icons/read.png";
+import appIconRedPreview from "../assets/app-icons/red.png";
+import appIconSleepPreview from "../assets/app-icons/sleep.png";
+import appIconSportPreview from "../assets/app-icons/sport.png";
+import appIconStudyPreview from "../assets/app-icons/study.png";
+import appIconTravelPreview from "../assets/app-icons/travel.png";
+import appIconWorkPreview from "../assets/app-icons/work.png";
 import defaultThemePreview from "../assets/default.webp";
-import xianxiaThemePreview from "../assets/xianxia.webp";
 import { SETTINGS_SECTION } from "../registry";
 import { recordSettingsUsage } from "./recordSettingsUsage";
 
@@ -50,16 +67,6 @@ export interface AppearanceUiThemeOption {
 	unavailable: boolean;
 }
 
-export interface AppearanceCursorOption {
-	active: boolean;
-	hint: string;
-	id: CursorStyle;
-	label: string;
-	/** 预览图 URL；缺省时用 icon */
-	preview?: string;
-	icon?: string;
-}
-
 export interface AppearanceOrnamentOption {
 	active: boolean;
 	hint: string;
@@ -69,6 +76,12 @@ export interface AppearanceOrnamentOption {
 	preview?: string;
 }
 
+export interface AppearanceChatBackgroundOption {
+	hint: string;
+	id: ChatBackgroundId;
+	label: string;
+}
+
 export interface AppearanceTextureOption {
 	active: boolean;
 	hint: string;
@@ -76,11 +89,11 @@ export interface AppearanceTextureOption {
 	label: string;
 }
 
-export interface AppearanceSidebarStyleOption {
+export interface AppearanceAppIconOption {
 	active: boolean;
-	hint: string;
-	id: SidebarStyle;
+	id: AppIconId;
 	label: string;
+	preview: string;
 }
 
 export interface AppearanceSettingsModel {
@@ -88,32 +101,36 @@ export interface AppearanceSettingsModel {
 		changeLanguage: (language: LanguagePreference) => void;
 		changeMode: (mode: ThemeMode, point: AppearancePoint) => void;
 		changeThemeName: (id: string, point: AppearancePoint) => void;
+		setAppIcon: (id: AppIconId) => void;
 		selectUiTheme: (id: string) => void;
-		setCursorStyle: (style: CursorStyle) => void;
+		setChatBackground: (id: ChatBackgroundId) => void;
 		setOrnament: (id: OrnamentId) => void;
-		setSidebarStyle: (style: SidebarStyle) => void;
 		setTexture: (id: NewSessionTextureId) => void;
+		setUiZoom: (factor: number) => void;
+		resetUiZoom: () => void;
 	};
 	activeUiThemeId: string;
-	cursorOptions: AppearanceCursorOption[];
-	cursorStyle: CursorStyle;
+	appIconOptions: AppearanceAppIconOption[];
+	chatBackgroundId: ChatBackgroundId;
+	chatBackgroundOptions: AppearanceChatBackgroundOption[];
 	labels: {
-		languageHint: string;
 		/** 「新会话页装饰」这块合并区域的说明，点明装饰件与纹理只影响新会话页。 */
 		newSessionDecorHint: string;
 		newSessionDecorTitle: string;
 		ornamentHint: string;
 		sections: {
-			cursor: string;
+			appIcon: string;
 			language: string;
 			mode: string;
 			ornament: string;
-			sidebar: string;
 			texture: string;
 			theme: string;
 			uiTheme: string;
+			uiZoom: string;
 		};
 		textureHint: string;
+		uiZoomReset: string;
+		uiZoomSliderLabel: string;
 		title: string;
 	};
 	/** 用户语言偏好（含 system），用于选择器高亮。 */
@@ -121,18 +138,16 @@ export interface AppearanceSettingsModel {
 	languages: AppearanceLanguageOption[];
 	mode: ThemeMode;
 	modeOptions: AppearanceModeOption[];
-	narrow: boolean;
 	ornamentId: OrnamentId;
 	ornamentOptions: AppearanceOrnamentOption[];
 	/** 是否展示「界面主题」区段（`VETTA_SHOW_UI_THEME=true`） */
 	showUiTheme: boolean;
-	sidebarStyle: SidebarStyle;
-	sidebarStyleOptions: AppearanceSidebarStyleOption[];
 	textureId: NewSessionTextureId;
 	textureOptions: AppearanceTextureOption[];
 	themeName: string;
 	themes: ThemeDef[];
 	uiThemes: AppearanceUiThemeOption[];
+	uiZoom: { default: number; factor: number; stepIndex: number; steps: readonly number[] };
 }
 
 type AppearanceSettingsActions = AppearanceSettingsModel["actions"];
@@ -180,41 +195,27 @@ const UI_THEME_OPTIONS = [
 		hintKey: "uiThemeDefaultHint",
 		preview: defaultThemePreview,
 	},
-	{
-		id: "xianxia",
-		labelKey: "uiThemeXianxia",
-		hintKey: "uiThemeXianxiaHint",
-		preview: xianxiaThemePreview,
-	},
 ] as const;
 
-const CURSOR_OPTIONS = [
-	{
-		id: "default" as const,
-		labelKey: "cursorDefaultTitle",
-		hintKey: "cursorDefaultHint",
-		icon: "icon-[mdi--cursor-default-outline]",
-	},
-	{
-		id: "stoat" as const,
-		labelKey: "cursorStoatTitle",
-		hintKey: "cursorStoatHint",
-		preview: STOAT_CURSOR_PREVIEW_URL,
-	},
-] as const;
-
-const SIDEBAR_STYLE_OPTIONS = [
-	{
-		id: "classic" as const,
-		labelKey: "sidebarStyleClassicTitle",
-		hintKey: "sidebarStyleClassicHint",
-	},
-	{
-		id: "floating" as const,
-		labelKey: "sidebarStyleFloatingTitle",
-		hintKey: "sidebarStyleFloatingHint",
-	},
-] as const;
+const APP_ICON_PREVIEWS: Record<AppIconId, string> = {
+	default: appIconDefaultPreview,
+	red: appIconRedPreview,
+	black: appIconBlackPreview,
+	light: appIconLightPreview,
+	dark: appIconDarkPreview,
+	binary: appIconBinaryPreview,
+	ermine: appIconErminePreview,
+	coding: appIconCodingPreview,
+	design: appIconDesignPreview,
+	work: appIconWorkPreview,
+	study: appIconStudyPreview,
+	read: appIconReadPreview,
+	game: appIconGamePreview,
+	sport: appIconSportPreview,
+	cook: appIconCookPreview,
+	travel: appIconTravelPreview,
+	sleep: appIconSleepPreview,
+};
 
 const COLOR_THEME_LABEL_KEYS = {
 	mono: "colorThemes.mono",
@@ -226,12 +227,12 @@ export function useAppearanceSettingsModel(): AppearanceSettingsModel {
 	const { mode, themeName, setMode, setThemeName } = useTheme();
 	const { activeThemeId, availableThemes, selectTheme, status: themeRuntimeStatus } = useThemeRuntime();
 	const { languagePreference, setLanguage } = useLanguage();
-	const { style: cursorStyle, setStyle: setCursorStyle } = useCursorStyle();
-	const { style: sidebarStyle, setStyle: setSidebarStyle } = useSidebarStyle();
+	const { factor: uiZoomFactor, setFactor: setUiZoomFactor, reset: resetUiZoom } = useUiZoom();
 	const { ornamentId, setOrnament } = useHeroOrnament();
 	const { textureId, setTexture } = useNewSessionTexture();
+	const { backgroundId, setBackground } = useChatBackground();
+	const { iconId: appIconId, setIcon: setAppIcon } = useAppIcon();
 	const { t } = useTranslation("settings");
-	const narrow = useNarrowScreen();
 
 	const languages = useMemo<AppearanceLanguageOption[]>(
 		() => [
@@ -276,17 +277,15 @@ export function useAppearanceSettingsModel(): AppearanceSettingsModel {
 		[activeThemeId, availableThemes, t, themeRuntimeStatus],
 	);
 
-	const cursorOptions = useMemo<AppearanceCursorOption[]>(
+	const appIconOptions = useMemo<AppearanceAppIconOption[]>(
 		() =>
-			CURSOR_OPTIONS.map((option) => ({
-				id: option.id,
-				active: cursorStyle === option.id,
-				label: t(option.labelKey),
-				hint: t(option.hintKey),
-				preview: "preview" in option ? option.preview : undefined,
-				icon: "icon" in option ? option.icon : undefined,
+			APP_ICON_IDS.map((id) => ({
+				id,
+				active: appIconId === id,
+				label: t(`appIcon_${id}`),
+				preview: APP_ICON_PREVIEWS[id],
 			})),
-		[cursorStyle, t],
+		[appIconId, t],
 	);
 
 	const ornamentOptions = useMemo<AppearanceOrnamentOption[]>(
@@ -301,6 +300,16 @@ export function useAppearanceSettingsModel(): AppearanceSettingsModel {
 		[ornamentId, t],
 	);
 
+	const chatBackgroundOptions = useMemo<AppearanceChatBackgroundOption[]>(
+		() =>
+			CHAT_BACKGROUND_CATALOG.map((entry) => ({
+				id: entry.id,
+				label: t(entry.labelKey),
+				hint: t(entry.hintKey),
+			})),
+		[t],
+	);
+
 	const textureOptions = useMemo<AppearanceTextureOption[]>(
 		() =>
 			NEW_SESSION_TEXTURE_CATALOG.map((entry) => ({
@@ -310,17 +319,6 @@ export function useAppearanceSettingsModel(): AppearanceSettingsModel {
 				hint: t(entry.hintKey),
 			})),
 		[t, textureId],
-	);
-
-	const sidebarStyleOptions = useMemo<AppearanceSidebarStyleOption[]>(
-		() =>
-			SIDEBAR_STYLE_OPTIONS.map((option) => ({
-				id: option.id,
-				active: sidebarStyle === option.id,
-				label: t(option.labelKey),
-				hint: t(option.hintKey),
-			})),
-		[sidebarStyle, t],
 	);
 
 	const themes = useMemo(
@@ -337,21 +335,22 @@ export function useAppearanceSettingsModel(): AppearanceSettingsModel {
 
 	const labels = useMemo(
 		() => ({
-			languageHint: t("languageHint"),
 			newSessionDecorHint: t("newSessionDecorHint"),
 			newSessionDecorTitle: t("newSessionDecorTitle"),
 			ornamentHint: t("ornamentHint"),
 			sections: {
-				cursor: t(SETTINGS_SECTION["appearance-cursor"].titleKey),
+				appIcon: t(SETTINGS_SECTION["appearance-app-icon"].titleKey),
 				language: t(SETTINGS_SECTION["appearance-language"].titleKey),
 				mode: t(SETTINGS_SECTION["appearance-mode"].titleKey),
 				ornament: t(SETTINGS_SECTION["appearance-ornament"].titleKey),
-				sidebar: t(SETTINGS_SECTION["appearance-sidebar"].titleKey),
 				texture: t(SETTINGS_SECTION["appearance-texture"].titleKey),
 				theme: t(SETTINGS_SECTION["appearance-theme"].titleKey),
 				uiTheme: t(SETTINGS_SECTION["appearance-ui-theme"].titleKey),
+				uiZoom: t(SETTINGS_SECTION["appearance-ui-zoom"].titleKey),
 			},
 			textureHint: t("textureHint"),
+			uiZoomReset: t("uiZoomReset"),
+			uiZoomSliderLabel: t("uiZoomSliderLabel"),
 			title: t("appearanceTitle"),
 		}),
 		[t],
@@ -370,18 +369,17 @@ export function useAppearanceSettingsModel(): AppearanceSettingsModel {
 				setThemeName(id, point);
 				recordSettingsUsage({ tab: "appearance", action: "changed", target: "color-theme", value: id });
 			},
+			setAppIcon: (id) => {
+				setAppIcon(id);
+				recordSettingsUsage({ tab: "appearance", action: "changed", target: "app-icon", value: id });
+			},
 			selectUiTheme: (id) => {
 				void selectTheme(id);
 				recordSettingsUsage({ tab: "appearance", action: "selected", target: "ui-theme", value: id });
 			},
-			setCursorStyle: (style) => {
-				setCursorStyle(style);
-				recordSettingsUsage({
-					tab: "appearance",
-					action: "changed",
-					target: "cursor-style",
-					value: style,
-				});
+			setChatBackground: (id) => {
+				setBackground(id);
+				recordSettingsUsage({ tab: "appearance", action: "changed", target: "chat-background", value: id });
 			},
 			setOrnament: (id) => {
 				setOrnament(id);
@@ -391,39 +389,52 @@ export function useAppearanceSettingsModel(): AppearanceSettingsModel {
 				setTexture(id);
 				recordSettingsUsage({ tab: "appearance", action: "changed", target: "new-session-texture", value: id });
 			},
-			setSidebarStyle: (style) => {
-				setSidebarStyle(style);
-				recordSettingsUsage({
-					tab: "appearance",
-					action: "changed",
-					target: "sidebar-style",
-					value: style,
-				});
+			setUiZoom: (factor) => {
+				setUiZoomFactor(factor);
+			},
+			resetUiZoom: () => {
+				resetUiZoom();
+				recordSettingsUsage({ tab: "appearance", action: "changed", target: "ui-zoom", value: "reset" });
 			},
 		}),
-		[selectTheme, setCursorStyle, setLanguage, setMode, setOrnament, setSidebarStyle, setTexture, setThemeName],
+		[
+			resetUiZoom,
+			selectTheme,
+			setAppIcon,
+			setBackground,
+			setLanguage,
+			setMode,
+			setOrnament,
+			setTexture,
+			setThemeName,
+			setUiZoomFactor,
+		],
 	);
 
 	return {
 		actions,
 		activeUiThemeId: activeThemeId,
-		cursorOptions,
-		cursorStyle,
+		appIconOptions,
+		chatBackgroundId: backgroundId,
+		chatBackgroundOptions,
 		labels,
 		language: languagePreference,
 		languages,
 		mode,
 		modeOptions,
-		narrow,
 		ornamentId,
 		ornamentOptions,
 		showUiTheme: isAppearanceUiThemeEnabled(),
-		sidebarStyle,
-		sidebarStyleOptions,
 		textureId,
 		textureOptions,
 		themeName,
 		themes,
 		uiThemes,
+		uiZoom: {
+			default: UI_ZOOM_DEFAULT,
+			factor: uiZoomFactor,
+			stepIndex: uiZoomStepIndex(uiZoomFactor),
+			steps: UI_ZOOM_STEPS,
+		},
 	};
 }

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { getVettaHomePath } from "@vetta/action-rpc";
 import type { SshHost } from "@vetta/ssh-transport";
 import { atomicWriteJSON, atomicWriteJSONAsync } from "@vetta/toolkit/atomic-write";
+import { type AppIconId, isAppIconId } from "../../shared/app-icon.js";
 import { isLanguagePreference, type LanguagePreference } from "../../shared/i18n/config.js";
 import {
 	DEFAULT_NOTIFICATION_PREFERENCES,
@@ -12,6 +13,7 @@ import {
 	normalizeNotificationPreferences,
 } from "../../shared/notification-preferences.js";
 import { normalizeShortcutsConfig, type ShortcutsConfig } from "../../shared/shortcuts.js";
+import { normalizeUiZoomFactor } from "../../shared/ui-zoom.js";
 import { isAgentMode } from "../agent-modes/index.js";
 import { DEFAULT_PROXY_CONFIG, type DesktopProxyConfig, normalizeProxyConfig } from "../proxy/proxy-settings.js";
 import { DESKTOP_CONFIG_SCHEMA_VERSION, migrateDesktopConfig } from "./desktop/migrate-config.js";
@@ -51,6 +53,10 @@ export interface DesktopConfig {
 	notificationsEnabled?: boolean;
 	notificationPreferences: DesktopNotificationPreferences;
 	language?: LanguagePreference;
+	/** 主窗口界面缩放比例（设置 → 外观 → 界面大小）。缺省 1。 */
+	uiZoomFactor?: number;
+	/** 应用图标（设置 → 外观 → 应用图标）。缺省用出厂图标。 */
+	appIconId?: AppIconId;
 	/** 新建会话的默认工作模式（合法值来自 main/agent-modes 模式注册表，ADR-0071）。会话创建时固化进会话，改这里只影响之后新建的会话。 */
 	defaultAgentMode?: string;
 	experimental?: ExperimentalConfig;
@@ -59,7 +65,6 @@ export interface DesktopConfig {
 	imageGeneration?: ImageGenerationConfig;
 	knowledgeBase?: KnowledgeBaseConfig;
 	shortcuts?: ShortcutsConfig;
-	quickPanel?: QuickPanelConfig;
 	appshot?: AppshotConfig;
 	/**
 	 * 手机遥控本机的配置（ADR-0128）。设备列表为空时桌面端不开端口、不连中继，
@@ -129,13 +134,6 @@ export interface AppshotConfig {
 	gesture?: AppshotGesture;
 }
 
-export type QuickPanelTrigger = "none" | "mod" | "alt" | "shift";
-
-export interface QuickPanelConfig {
-	trigger?: QuickPanelTrigger;
-	postSendBehavior?: "foreground" | "background";
-}
-
 export interface KnowledgeBaseConfig {
 	enabled?: boolean;
 	pollIntervalMinutes?: number;
@@ -176,7 +174,6 @@ const DEFAULT_CONFIG: DesktopConfig = {
 	proxy: { ...DEFAULT_PROXY_CONFIG },
 	imageGeneration: {},
 	shortcuts: { bindings: {} },
-	quickPanel: { trigger: "none", postSendBehavior: "foreground" },
 	appshot: { enabled: false, gesture: "both-shift" },
 };
 
@@ -217,19 +214,6 @@ export function normalizeKnowledgeBase(value: unknown): KnowledgeBaseConfig {
 			typeof input.processingModelReasoningLevel === "string" ? input.processingModelReasoningLevel : undefined,
 		agentConcurrency: clampInt(input.agentConcurrency, 3, 1),
 		ocrConcurrency: clampInt(input.ocrConcurrency, 1, 1),
-	};
-}
-
-export function normalizeQuickPanel(value: unknown): QuickPanelConfig {
-	if (typeof value !== "object" || value === null) {
-		return { trigger: "none", postSendBehavior: "foreground" };
-	}
-	const input = value as Record<string, unknown>;
-	const trigger: QuickPanelTrigger =
-		input.trigger === "mod" || input.trigger === "alt" || input.trigger === "shift" ? input.trigger : "none";
-	return {
-		trigger,
-		postSendBehavior: input.postSendBehavior === "background" ? "background" : "foreground",
 	};
 }
 
@@ -341,12 +325,13 @@ function parseDesktopConfig(parsed: Record<string, unknown>): DesktopConfig {
 		notificationsEnabled: typeof parsed.notificationsEnabled === "boolean" ? parsed.notificationsEnabled : true,
 		notificationPreferences: normalizeNotificationPreferences(parsed.notificationPreferences),
 		language: isLanguagePreference(parsed.language) ? parsed.language : undefined,
+		uiZoomFactor: typeof parsed.uiZoomFactor === "number" ? normalizeUiZoomFactor(parsed.uiZoomFactor) : undefined,
+		appIconId: isAppIconId(parsed.appIconId) ? parsed.appIconId : undefined,
 		experimental: normalizeExperimental(parsed.experimental),
 		proxy: normalizeProxyConfig(parsed.proxy),
 		imageGeneration: normalizeImageGeneration(parsed.imageGeneration),
 		knowledgeBase: normalizeKnowledgeBase(parsed.knowledgeBase),
 		shortcuts: normalizeShortcuts(parsed.shortcuts),
-		quickPanel: normalizeQuickPanel(parsed.quickPanel),
 		appshot: normalizeAppshot(parsed.appshot),
 		remoteControl: normalizeRemoteControl(parsed.remoteControl),
 		sshHosts: readSshHostsSync(parsed.sshHosts),
@@ -484,6 +469,7 @@ function normalizeSshHosts(value: unknown): SshHost[] | undefined {
 				? { identityFile: input.identityFile.trim() }
 				: {}),
 			source: input.source === "ssh-config" ? "ssh-config" : "manual",
+			...(input.authMethod === "password" ? { authMethod: "password" as const } : {}),
 			...(typeof input.credentialRef === "string" && input.credentialRef.length > 0
 				? { credentialRef: input.credentialRef }
 				: {}),

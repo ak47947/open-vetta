@@ -1,11 +1,11 @@
 ---
 name: cowart-image-gen
-description: Generate a bitmap for the Cowart canvas via Vetta generate_image, then insert or replace via Cowart MCP. Use when the user asks to create, fill, replace, or place an AI-generated image on a Cowart canvas.
+description: Generate a bitmap for the Cowart canvas via Atrix generate_image, then insert or replace via Cowart MCP. Use when the user asks to create, fill, replace, or place an AI-generated image on a Cowart canvas.
 ---
 
-# Cowart Image Gen (Vetta)
+# Cowart Image Gen (Atrix)
 
-## Vetta image tools (required)
+## Atrix image tools (required)
 
 | Intent | Tool |
 |--------|------|

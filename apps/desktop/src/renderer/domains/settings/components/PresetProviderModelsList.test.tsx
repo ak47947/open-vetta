@@ -20,6 +20,7 @@ const labels: PresetProvidersSectionLabels = {
 	remove: "Remove",
 	enable: "Enable",
 	apiKeyDirect: (provider) => `${provider} API key`,
+	apiKeyLabel: "API Key",
 	apiKeyPlaceholder: "API key",
 	encryptedApiKeyPlaceholder: "Saved API key",
 	save: "Save",
@@ -34,6 +35,13 @@ const labels: PresetProvidersSectionLabels = {
 	refreshingModels: "Refreshing models",
 	refreshCatalog: "Refresh catalog",
 	copyApiKey: "Copy API key",
+	testConnect: "Test",
+	testing: "Testing",
+	testOk: "OK",
+	testFailed: "Failed",
+	editBaseUrl: "Change server address",
+	baseUrlPlaceholder: "Server address",
+	toggleProvider: (provider) => `Toggle ${provider}`,
 };
 
 const row: PresetProviderRow = {
@@ -66,6 +74,8 @@ const row: PresetProviderRow = {
 	],
 	offline: false,
 	adopted: false,
+	enabled: false,
+	autoKey: false,
 	isOpen: false,
 	isExpanded: true,
 	refreshing: false,

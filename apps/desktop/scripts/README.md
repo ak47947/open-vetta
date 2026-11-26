@@ -179,8 +179,7 @@ cd apps/desktop && bun run build:main
 
 所有 `dist:*` / `pack:*` 命令都会先执行 `bun run validate:pack-env`，而且检查发生在清理旧产物、准备原生依赖和编译之前。`prepare-pack.js` 还会复用同一校验器做第二道防线。检查覆盖：
 
-- `VETTA_CLOUD_ENABLED` 必须明确为 `true`（商业版）或 `false`（开源版）；
-- 商业版必须有合法的服务端 URL，并使用 `generic` 更新源；开源版必须使用 GitHub 更新源；
+- 不再接受 `VETTA_SERVER_URL` / `VETTA_SITE_URL`：vetta 服务端已下线（ADR-0156），配置这些变量会直接报错；
 - 两种版本均注册内置 Vetta 官方 GitHub Marketplace；发行方可通过环境变量替换仓库与 ref，配置必须通过 GitHub URL 校验；
 - Windows、macOS、Linux 目标标签、语音开关、生产插件租户；
 - Sentry / PostHog 的 URL、布尔值、采样率及 Source Map 上传变量组合；
@@ -194,7 +193,7 @@ bun run dist:opensource
 bun run dist:opensource -- --target dir
 ```
 
-该入口读取 `.env.opensource`，固定关闭 cloud、使用 GitHub provider，并为客户端更新仓库提供默认值；fork 可在文件或 shell 中覆盖更新 owner、repo。能力 Marketplace 未配置 `VETTA_OPEN_MARKETPLACE_REPOSITORY` 时内置 Vetta 官方源并读取 `gh-pages` 分发；fork 可用该变量替换成自己的仓库，未显式配置 ref 时仍默认读取 `main`。
+该入口读取 `.env.opensource`，固定使用 GitHub provider，并为客户端更新仓库提供默认值；fork 可在文件或 shell 中覆盖更新 owner、repo。能力 Marketplace 未配置 `VETTA_OPEN_MARKETPLACE_REPOSITORY` 时内置 Vetta 官方源并读取 `gh-pages` 分发；fork 可用该变量替换成自己的仓库，未显式配置 ref 时仍默认读取 `main`。
 
 需要只生成某一种 Linux 格式时，在 `apps/desktop` 使用独立的 `package:*` 入口；不带格式的入口一次生成正式发布使用的 AppImage、DEB 和 RPM：
 
@@ -218,9 +217,11 @@ bun run package:win:zip
 bun run package:win:portable
 ```
 
+Windows ARM64 用 `bun run package:win:arm64`，同样一次生成 Inno、MSI 和 ZIP，产物名带 `win-arm64`。它必须在 ARM64 Windows 主机上原生构建：node-pty 等原生依赖只按主机架构安装，跨架构构建会悄悄缺包。ARM64 包不带语音输入（`sherpa-onnx` 只有 x64 版），Windows 沙箱目前只发布了 x64 二进制，在 ARM64 上靠系统的 x64 仿真运行。
+
 这些入口也都有 `:test` 变体，原有 `dist:win:*` 是兼容别名。`latest.yml` 始终只引用支持现有版本目录切换和差分更新的 Inno 安装器；MSI 与 ZIP 是同版本的补充分发制品，不会改写自动更新清单。
 
-正式发布 workflow 会先运行根 `check`、质量脚本测试和 Desktop packaging 测试，全部通过后才启动四个 Windows / macOS 双架构 / Linux 构建任务。Windows x64 在同一次构建中生成 Inno、MSI 和 ZIP，Linux x64 在同一次 electron-builder 调用中生成 AppImage、DEB 和 RPM，避免多个目标分别覆盖更新清单。每个平台构建后都会启动真实 packaged 应用并运行启动与 updater E2E，再校验 updater metadata、hash、blockmap 和可安装内容；MSI/ZIP 会在 Windows 上解包检查版本目录，DEB/RPM 还会分别在 Ubuntu/Fedora 容器中完成真实安装。真正发布到 R2 或 GitHub 后，再由 `verify-update-feed.mjs` 通过公开 URL 检查三平台 metadata 与其引用的安装包是否可读。
+正式发布 workflow 会先运行根 `check`、质量脚本测试和 Desktop packaging 测试，全部通过后才启动五个构建任务：Windows 与 macOS 各两个架构、Linux 一个。Windows 每个架构在同一次构建中生成 Inno、MSI 和 ZIP，`latest.yml` 改名为 `latest-win-<arch>.yml` 上传，发布前由 `merge-windows-update-metadata.mjs` 合并回单一 `latest.yml`（x64 在前，旧客户端读顶层 `path` 仍拿到 x64 安装包）；Linux x64 在同一次 electron-builder 调用中生成 AppImage、DEB 和 RPM，避免多个目标分别覆盖更新清单。每个平台构建后都会启动真实 packaged 应用并运行启动与 updater E2E，再校验 updater metadata、hash、blockmap 和可安装内容；MSI/ZIP 会在 Windows 上解包检查版本目录，DEB/RPM 还会分别在 Ubuntu/Fedora 容器中完成真实安装。真正发布到 R2 或 GitHub 后，再由 `verify-update-feed.mjs` 通过公开 URL 检查三平台 metadata 与其引用的安装包是否可读。
 
 ## Desktop 自动更新发布
 

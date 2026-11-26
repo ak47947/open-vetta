@@ -7,6 +7,13 @@ function requireString(value: unknown, field: string): string {
 	return value;
 }
 
+/** MCP 配置落点：`{ scope?, cwd? }`，字段形状交给能力合同校验，这里只挡掉非对象。 */
+function optionalMcpTarget(value: unknown): { scope?: "global" | "project"; cwd?: string } | undefined {
+	if (value === undefined) return undefined;
+	if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error("target must be an object");
+	return value as { scope?: "global" | "project"; cwd?: string };
+}
+
 function requireText(value: unknown, field: string): string {
 	if (typeof value !== "string") throw new Error(`${field} must be a string`);
 	return value;
@@ -55,20 +62,6 @@ function optionalListRecursiveOptions(value: unknown): { names?: string[]; ignor
 function optionalSkillType(value: unknown): "skill" | undefined {
 	if (value === undefined) return undefined;
 	if (value !== "skill") throw new Error("type must be skill");
-	return value;
-}
-
-function requireQuickPanelTrigger(value: unknown): "none" | "mod" | "alt" | "shift" {
-	if (value !== "none" && value !== "mod" && value !== "alt" && value !== "shift") {
-		throw new Error("trigger must be none, mod, alt, or shift");
-	}
-	return value;
-}
-
-function requireQuickPanelBehavior(value: unknown): "foreground" | "background" {
-	if (value !== "foreground" && value !== "background") {
-		throw new Error("behavior must be foreground or background");
-	}
 	return value;
 }
 
@@ -337,28 +330,46 @@ export function registerPluginCapabilitiesIpc(): () => void {
 	ipcMain.handle(PLUGIN_CAPABILITY_CHANNELS.ARTIFACT_RELEASE, (_event, sessionId: unknown, artifactId: unknown) =>
 		adapter.releaseArtifact(requireString(sessionId, "sessionId"), requireString(artifactId, "artifactId")),
 	);
-	ipcMain.handle(PLUGIN_CAPABILITY_CHANNELS.MCP_SERVER_LIST, (_event, sessionId: unknown) =>
-		adapter.listMcpServers(requireString(sessionId, "sessionId")),
+	ipcMain.handle(PLUGIN_CAPABILITY_CHANNELS.MCP_SERVER_LIST, (_event, sessionId: unknown, target?: unknown) =>
+		adapter.listMcpServers(requireString(sessionId, "sessionId"), optionalMcpTarget(target)),
 	);
-	ipcMain.handle(PLUGIN_CAPABILITY_CHANNELS.MCP_SERVER_GET, (_event, sessionId: unknown, name: unknown) =>
-		adapter.getMcpServer(requireString(sessionId, "sessionId"), requireString(name, "name")),
+	ipcMain.handle(
+		PLUGIN_CAPABILITY_CHANNELS.MCP_SERVER_GET,
+		(_event, sessionId: unknown, name: unknown, target?: unknown) =>
+			adapter.getMcpServer(
+				requireString(sessionId, "sessionId"),
+				requireString(name, "name"),
+				optionalMcpTarget(target),
+			),
 	);
 	ipcMain.handle(
 		PLUGIN_CAPABILITY_CHANNELS.MCP_SERVER_UPSERT,
-		(_event, sessionId: unknown, name: unknown, data: unknown) =>
-			adapter.upsertMcpServer(requireString(sessionId, "sessionId"), requireString(name, "name"), data),
+		(_event, sessionId: unknown, name: unknown, data: unknown, target?: unknown) =>
+			adapter.upsertMcpServer(
+				requireString(sessionId, "sessionId"),
+				requireString(name, "name"),
+				data,
+				optionalMcpTarget(target),
+			),
 	);
 	ipcMain.handle(
 		PLUGIN_CAPABILITY_CHANNELS.MCP_SERVER_SET_ENABLED,
-		(_event, sessionId: unknown, name: unknown, enabled: unknown) =>
+		(_event, sessionId: unknown, name: unknown, enabled: unknown, target?: unknown) =>
 			adapter.setMcpServerEnabled(
 				requireString(sessionId, "sessionId"),
 				requireString(name, "name"),
 				requireBoolean(enabled, "enabled"),
+				optionalMcpTarget(target),
 			),
 	);
-	ipcMain.handle(PLUGIN_CAPABILITY_CHANNELS.MCP_SERVER_REMOVE, (_event, sessionId: unknown, name: unknown) =>
-		adapter.removeMcpServer(requireString(sessionId, "sessionId"), requireString(name, "name")),
+	ipcMain.handle(
+		PLUGIN_CAPABILITY_CHANNELS.MCP_SERVER_REMOVE,
+		(_event, sessionId: unknown, name: unknown, target?: unknown) =>
+			adapter.removeMcpServer(
+				requireString(sessionId, "sessionId"),
+				requireString(name, "name"),
+				optionalMcpTarget(target),
+			),
 	);
 	ipcMain.handle(PLUGIN_CAPABILITY_CHANNELS.BATCH_PROJECT_LIST, (_event, sessionId: unknown) =>
 		adapter.listBatchProjects(requireString(sessionId, "sessionId")),
@@ -608,17 +619,6 @@ export function registerPluginCapabilitiesIpc(): () => void {
 	);
 	ipcMain.handle(PLUGIN_CAPABILITY_CHANNELS.SHORTCUT_BINDING_RESET_ALL, (_event, sessionId: unknown) =>
 		adapter.resetAllShortcutBindings(requireString(sessionId, "sessionId")),
-	);
-	ipcMain.handle(PLUGIN_CAPABILITY_CHANNELS.QUICK_PANEL_TRIGGER_SET, (_event, sessionId: unknown, trigger: unknown) =>
-		adapter.setQuickPanelTrigger(requireString(sessionId, "sessionId"), requireQuickPanelTrigger(trigger)),
-	);
-	ipcMain.handle(
-		PLUGIN_CAPABILITY_CHANNELS.QUICK_PANEL_POST_SEND_BEHAVIOR_SET,
-		(_event, sessionId: unknown, behavior: unknown) =>
-			adapter.setQuickPanelPostSendBehavior(
-				requireString(sessionId, "sessionId"),
-				requireQuickPanelBehavior(behavior),
-			),
 	);
 	ipcMain.handle(PLUGIN_CAPABILITY_CHANNELS.DOWNLOAD_LIST, (_event, sessionId: unknown) =>
 		adapter.listDownloads(requireString(sessionId, "sessionId")),

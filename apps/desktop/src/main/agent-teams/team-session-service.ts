@@ -63,7 +63,7 @@ import { type LegacyTeamSessionRepository, legacyTeamSessionRepository } from ".
 import { TeamSessionStateRepository } from "./team-session-state-repository.js";
 import { TeamSharedContextService } from "./team-shared-context-service.js";
 import { TeamTurnCoordinator } from "./team-turn-coordinator.js";
-import type { TeamSessionWorkspace } from "./team-workspace.js";
+import { removeTeamSessionWorkspace, type TeamSessionWorkspace } from "./team-workspace.js";
 
 const log = getAppLogger("agent-team-sessions");
 
@@ -365,10 +365,15 @@ export class AgentTeamSessionService {
 	}
 
 	private publishSessionUpdated(session: TeamSessionDocument): void {
+		// Attempts and deliveries publish the document they started from. A newer one
+		// (e.g. a model switch made while the turn ran) must win, or the renderer adopts
+		// the old modelSettings and sends its next request to the replaced model.
+		const loaded = this.sessionState.get(session.id);
+		const latest = loaded && loaded.revision >= session.revision ? loaded : session;
 		this.eventHub.publish({
 			type: "session-updated",
-			teamSessionId: session.id,
-			snapshot: this.snapshot(session),
+			teamSessionId: latest.id,
+			snapshot: this.snapshot(latest),
 		});
 	}
 
@@ -1091,9 +1096,21 @@ export class AgentTeamSessionService {
 
 	async deleteSession(
 		reference: TeamSessionReference | { readonly id: string; readonly coordinationSessionPath?: string } | string,
+		mode?: "workspace-removal",
 	): Promise<void> {
 		const sessionReference = teamSessionReferenceParts(reference);
 		const session = await this.read(sessionReference.id, sessionReference.coordinationSessionPath);
+		if (mode === "workspace-removal") {
+			if (session.workspaceKind === "project") throw new Error("Team conversation belongs to a project");
+			if (
+				(await this.displayProjection(session)).workingMemberIds?.length ||
+				this.eventHub.runningSessionIds().includes(session.id)
+			) {
+				throw new Error("Team conversation is running");
+			}
+			if (session.workspaceKind === "session")
+				await removeTeamSessionWorkspace(session.teamId, session.id, session.cwd);
+		}
 		await this.abort(session.id);
 		const runtimeIds = [
 			...(session.coordinationRuntime ? [session.coordinationRuntime.sessionId] : []),

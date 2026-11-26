@@ -144,7 +144,7 @@ type HostClientConfig struct {
 	// to emit its first JSON line before giving up. Zero means use the
 	// default (30s).
 	//
-	// The desktop host spawns Vetta.app itself as the agent, so the FIRST
+	// The desktop host spawns Atrix.app itself as the agent, so the FIRST
 	// session after an app launch or update pays a full Electron + asar cold
 	// start (measured ~10s on a warm-disk arm64 Mac, vs ~1s once cached).
 	// A 10s budget lost that race and surfaced as "handshake timed out" with

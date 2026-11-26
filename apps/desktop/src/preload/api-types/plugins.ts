@@ -30,6 +30,7 @@ import type {
 	McpServerDetail,
 	McpServerSummary,
 	McpServerUpsertData,
+	McpTarget,
 	MediaProviderDescriptor,
 	ModelConfigSnapshot,
 	ModelDefaultResult,
@@ -42,9 +43,6 @@ import type {
 	PersistedArtifact,
 	ProjectEntry,
 	ProjectListResult,
-	QuickPanelPostSendBehavior,
-	QuickPanelSettings,
-	QuickPanelTrigger,
 	SchedulerCommandResult,
 	SchedulerExecutionRecord,
 	SchedulerTask,
@@ -531,11 +529,11 @@ export interface DesktopPluginCapabilityArtifactsApi {
 }
 
 export interface DesktopPluginCapabilityMcpApi {
-	list(sessionId: string): Promise<McpServerSummary[]>;
-	get(sessionId: string, name: string): Promise<McpServerDetail>;
-	upsert(sessionId: string, name: string, data: McpServerUpsertData): Promise<McpServerDetail>;
-	setEnabled(sessionId: string, name: string, enabled: boolean): Promise<void>;
-	remove(sessionId: string, name: string): Promise<void>;
+	list(sessionId: string, target?: McpTarget): Promise<McpServerSummary[]>;
+	get(sessionId: string, name: string, target?: McpTarget): Promise<McpServerDetail>;
+	upsert(sessionId: string, name: string, data: McpServerUpsertData, target?: McpTarget): Promise<McpServerDetail>;
+	setEnabled(sessionId: string, name: string, enabled: boolean, target?: McpTarget): Promise<void>;
+	remove(sessionId: string, name: string, target?: McpTarget): Promise<void>;
 }
 
 export interface DesktopPluginCapabilityBatchTasksApi {
@@ -590,8 +588,6 @@ export interface DesktopPluginCapabilityShortcutsApi {
 	setBinding(sessionId: string, id: string, shortcut: string): Promise<ShortcutBindingsResult>;
 	resetBinding(sessionId: string, id: string): Promise<ShortcutBindingResetResult>;
 	resetAllBindings(sessionId: string): Promise<ShortcutBindingsResult>;
-	setQuickPanelTrigger(sessionId: string, trigger: QuickPanelTrigger): Promise<QuickPanelSettings>;
-	setQuickPanelPostSendBehavior(sessionId: string, behavior: QuickPanelPostSendBehavior): Promise<QuickPanelSettings>;
 }
 
 export interface DesktopPluginCapabilityDownloadsApi {
@@ -856,6 +852,8 @@ export interface DesktopPluginsApi {
 	): Promise<void>;
 	reportServiceReady(sessionId: string, serviceId: string, ready: boolean): Promise<PluginServiceStatus>;
 	onServiceStatusChanged(handler: (event: { pluginId: string; status: PluginServiceStatus }) => void): () => void;
+	/** PNG data URL of an installed macOS app's icon (standard app folders only); `null` when not installed. */
+	getAppIcon(sessionId: string, appName: string): Promise<string | null>;
 	/** Run an allowed command for a plugin via the main process (execFile, no shell). */
 	runCommand(
 		sessionId: string,

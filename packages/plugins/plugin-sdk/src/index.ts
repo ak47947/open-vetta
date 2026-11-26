@@ -74,6 +74,9 @@ export type {
 	PluginFilePreviewProps,
 	PluginFilePreviewContribution,
 	PluginActivityTabContribution,
+	PluginActivityTabMeta,
+	PluginActivityTabMetaResult,
+	PluginActivityTabScope,
 	PluginBottomPanelContribution,
 	PluginActivityTabRetention,
 	PluginActivityTabTargetOptions,
@@ -81,6 +84,17 @@ export type {
 	PluginOpenActivityTabOptions,
 	PluginPromptDecoration,
 	PluginInputActionContribution,
+	PluginHeaderActionContribution,
+	PluginHeaderActionContext,
+	PluginHeaderActionMenuItem,
+	PluginHeaderActionMenuItemKind,
+	PluginHeaderActionPopover,
+	PluginHeaderActionPopoverHost,
+	PluginHeaderActionPopoverProps,
+	PluginHeaderActionPopoverSize,
+	PluginHeaderActionState,
+	PluginHeaderActionSurface,
+	PluginHeaderActionTone,
 	PluginNewSessionContext,
 	PluginNewSessionContextActivation,
 	PluginNewSessionContextContribution,
@@ -193,10 +207,10 @@ export type {
 	PluginOfficialSkillInfo,
 	PluginOfficialInstalledSkill,
 	PluginOfficialShortcutBinding,
-	PluginOfficialQuickPanelSettings,
 	PluginOfficialImStatus,
 	PluginOfficialImLog,
 	PluginOfficialMcpServerSummary,
+	PluginOfficialMcpTarget,
 	PluginOfficialMcpServerDetail,
 	PluginOfficialMcpUpsertData,
 	PluginOfficialExecutionMode,
@@ -443,3 +457,7 @@ export {
 	usePromptAttachment,
 	useSidebarState,
 } from "./hooks.js";
+
+// Host-rendered model picker (same component as the chat input bar)
+export type { PluginModelPickerProps, PluginModelPickerReasoning } from "./model-picker.js";
+export { ModelPicker } from "./model-picker.js";

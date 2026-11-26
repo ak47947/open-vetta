@@ -10,9 +10,35 @@
 // Windows/Linux 主窗口是 frameless（无菜单栏可见），关闭时直接置 null 即可，
 // 复制粘贴由 Chromium 原生处理，不依赖菜单。
 
-import { Menu, type MenuItemConstructorOptions } from "electron";
+import { app, dialog, Menu, type MenuItemConstructorOptions } from "electron";
 import { isDevToolsAllowed } from "./devtools-policy.js";
 import { mainT } from "./i18n/index.js";
+import { getAppLogger } from "./logger.js";
+import { resetUiZoom, stepUiZoom } from "./ui-zoom/ui-zoom-service.js";
+
+let quitConfirmationPending = false;
+
+async function confirmMenuQuit(): Promise<void> {
+	if (quitConfirmationPending) return;
+	quitConfirmationPending = true;
+	try {
+		const { response } = await dialog.showMessageBox({
+			type: "none",
+			title: mainT("quitConfirmation.title"),
+			message: mainT("quitConfirmation.title"),
+			detail: mainT("quitConfirmation.detail"),
+			buttons: [mainT("quitConfirmation.quit"), mainT("quitConfirmation.cancel")],
+			defaultId: 0,
+			cancelId: 1,
+			noLink: true,
+		});
+		if (response === 0) app.quit();
+	} catch (error) {
+		getAppLogger("app-menu").error("Failed to show quit confirmation", error);
+	} finally {
+		quitConfirmationPending = false;
+	}
+}
 
 export interface ApplicationMenuTemplateOptions {
 	isMac: boolean;
@@ -51,7 +77,12 @@ export function buildApplicationMenuTemplate({
 				{ role: "hideOthers", label: mainT("menu.app.hideOthers") },
 				{ role: "unhide", label: mainT("menu.app.unhide") },
 				{ type: "separator" },
-				{ role: "quit", label: mainT("menu.app.quit") },
+				// role: "quit" 会忽略 click，必须用显式菜单项让 Cmd+Q 先经过确认。
+				{
+					label: mainT("menu.app.quit"),
+					accelerator: "Command+Q",
+					click: () => confirmMenuQuit(),
+				},
 			],
 		},
 		{
@@ -75,9 +106,18 @@ export function buildApplicationMenuTemplate({
 			submenu: [
 				...developerItems,
 				...(developerItems.length > 0 ? ([{ type: "separator" }] as MenuItemConstructorOptions[]) : []),
-				{ role: "resetZoom", label: mainT("menu.view.resetZoom") },
-				{ role: "zoomIn", label: mainT("menu.view.zoomIn") },
-				{ role: "zoomOut", label: mainT("menu.view.zoomOut") },
+				// 不用 resetZoom/zoomIn/zoomOut role：role 直接改 Chromium 缩放，不经过设置里的
+				// 持久化比例，会与外观页滑块各改各的。
+				{ label: mainT("menu.view.resetZoom"), accelerator: "CommandOrControl+0", click: () => void resetUiZoom() },
+				{ label: mainT("menu.view.zoomIn"), accelerator: "CommandOrControl+Plus", click: () => void stepUiZoom(1) },
+				// 美式键盘上放大是不带 Shift 的 Cmd+=；隐藏项只占快捷键，不在菜单里重复显示。
+				{
+					label: mainT("menu.view.zoomIn"),
+					accelerator: "CommandOrControl+=",
+					visible: false,
+					click: () => void stepUiZoom(1),
+				},
+				{ label: mainT("menu.view.zoomOut"), accelerator: "CommandOrControl+-", click: () => void stepUiZoom(-1) },
 				{ type: "separator" },
 				{ role: "togglefullscreen", label: mainT("menu.view.toggleFullScreen") },
 			],

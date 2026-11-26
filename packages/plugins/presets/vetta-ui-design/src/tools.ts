@@ -28,13 +28,14 @@ import { DIRECTION_FILE } from "./direction/record";
 import { readDirectionTells } from "./direction/direction-file";
 import { registerHistoryTools } from "./history/history-tools";
 import { registerExportTool } from "./materials/export-tool";
-import { setDesignPresence } from "./vetd/design-presence";
+import { addDesignPath, setDesignPresence } from "./vetd/design-presence";
 import { ensureDesignIgnored } from "./vetd/design-ignore";
 import { ENGINE_PROVIDED_PACKAGES } from "./engine/engine-files";
 import { engineDiagnostics, installDesignDependencies } from "./engine/engine-manager";
 import { composeNotePins } from "./notes/annotate";
 import { notesFilePath } from "./notes/notes-store";
 import { type DesignNote, type NotesFile, noteStatus, parseNotesFile, pendingNotes } from "./notes/types";
+import { openCanvasTab } from "./canvas/open-canvas-tab";
 import { CANVAS_TAB_ID } from "./tab-ids";
 import { type SourceIssue, THEME_PLACEHOLDER_RULE } from "./vetd/check-sources";
 import { blockingSyntaxIssues, SYNTAX_RULE } from "./vetd/check-syntax";
@@ -161,7 +162,7 @@ export function registerDesignTools(ctx: PluginContext): void {
 		// 反向触发段（Do NOT / Only for）是误调防线的第一层：这个工具会在用户工作区
 		// 里建一整棵目录，模型在「写个页面」这种指令上最容易把它当成实现路径。
 		description:
-			"Create a new Vetta UI Design document (a `<name>.vetd/` directory holding design.json + sources) in the current workspace and open it on the design canvas. Requires the product type (or an explicit frame size) — that is what the design defaults to, so decide it from the user's request BEFORE calling. Each frames/<id>.tsx is one canvas frame AND one route — invoke the vetta-ui-design skill for the rules before writing any of them (its first steps — inventory the subject, ask what the user left open — come before this call, so load it first). " + CREED_LINE + " For a landing page or app screens also pass `brief` (and `sector` for a landing page): a landing page gets three art directions dealt to choose from with vetd_direction; app screens get the brief for proposing three directions of your own there.\nDo NOT use when the user is writing or modifying code in an existing codebase — implement the page directly in that repo's own framework instead.\nOnly for standalone visual exploration decoupled from any codebase, when the user asked for a design/mockup rather than working code.",
+			"Create a new Atrix UI Design document (a `<name>.vetd/` directory holding design.json + sources) in the current workspace and open it on the design canvas. Requires the product type (or an explicit frame size) — that is what the design defaults to, so decide it from the user's request BEFORE calling. Each frames/<id>.tsx is one canvas frame AND one route — invoke the vetta-ui-design skill for the rules before writing any of them (its first steps — inventory the subject, ask what the user left open — come before this call, so load it first). " + CREED_LINE + " For a landing page or app screens also pass `brief` (and `sector` for a landing page): a landing page gets three art directions dealt to choose from with vetd_direction; app screens get the brief for proposing three directions of your own there.\nDo NOT use when the user is writing or modifying code in an existing codebase — implement the page directly in that repo's own framework instead.\nOnly for standalone visual exploration decoupled from any codebase, when the user asked for a design/mockup rather than working code.",
 		parameters: {
 			type: "object",
 			properties: {
@@ -269,6 +270,8 @@ export function registerDesignTools(ctx: PluginContext): void {
 			// 工具 handler 的 effect 会在当前 Turn 后续模型调用上重放，因此创建成功后
 			// 还要显式覆盖本轮开头写入的 disable，避免 agent 只剩 vetd_create 可用。
 			setDesignPresence(session.cwd, true);
+			// 顶栏「打开画布」的列表跟着长一份，不必等下一次会话切换才看得见新设计。
+			addDesignPath(session.cwd, result.vetdPath);
 			for (const toolName of DESIGN_ONLY_TOOLS) actions.tools.enable(toolName);
 			setPendingDesignPath(result.vetdPath, session.cwd);
 			console.debug(
@@ -279,7 +282,7 @@ export function registerDesignTools(ctx: PluginContext): void {
 				})}`,
 			);
 			ctx.ui.setActivityTabVisible(CANVAS_TAB_ID, true, { cwd: session.cwd });
-			ctx.ui.openActivityTab(CANVAS_TAB_ID, { width: "max", cwd: session.cwd });
+			openCanvasTab(ctx.ui, session.cwd);
 			const stated = statedIntentFrom(trigger.input.intent);
 			const dealt =
 				directionMode === "page" && dealSession && dealParams
@@ -346,7 +349,7 @@ export function registerDesignTools(ctx: PluginContext): void {
 		handler: async ({ host, session, trigger }) => {
 			const controller = getCanvasController();
 			if (!controller) {
-				ctx.ui.openActivityTab(CANVAS_TAB_ID, { width: "max", cwd: session.cwd });
+				openCanvasTab(ctx.ui, session.cwd);
 				return {
 					ok: false,
 					retryable: true,
@@ -553,7 +556,7 @@ export function registerDesignTools(ctx: PluginContext): void {
 		name: "vetd_status",
 		label: "%tool.vetd_status%",
 		description:
-			"Inspect the Vetta UI Design state: workspace designs, the open design, frames, shared UI, source-only `issues`, `renderVerification`, pending notes and engine diagnostics. `issues: []` only means the source checks are clear; it is never proof that UI verification passed. `renderVerification` reports which latest captures are clean, stale, unverified, or still have measured issues. Call this once before editing an existing design; use vetd_screenshot batches for subsequent verification.\nDo NOT use to survey a code repository, locate its UI source files or read its build state — use the ordinary file search and read tools instead.\nOnly for .vetd design documents and the design canvas.",
+			"Inspect the Atrix UI Design state: workspace designs, the open design, frames, shared UI, source-only `issues`, `renderVerification`, pending notes and engine diagnostics. `issues: []` only means the source checks are clear; it is never proof that UI verification passed. `renderVerification` reports which latest captures are clean, stale, unverified, or still have measured issues. Call this once before editing an existing design; use vetd_screenshot batches for subsequent verification.\nDo NOT use to survey a code repository, locate its UI source files or read its build state — use the ordinary file search and read tools instead.\nOnly for .vetd design documents and the design canvas.",
 		parameters: { type: "object", properties: {}, additionalProperties: false },
 		scope_use: SCOPE_USE,
 		handler: async ({ host, session }) => {

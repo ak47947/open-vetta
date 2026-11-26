@@ -15,9 +15,8 @@
         "git",
         "scripts",
         "plugin-workbench",
-        "comfyui-media-provider",
-        "content-creation",
-        "browser"
+        "browser",
+        "open-in-app"
       ]
     },
     "production": {
@@ -33,7 +32,8 @@
         "git",
         "scripts",
         "plugin-workbench",
-        "browser"
+        "browser",
+        "open-in-app"
       ]
     }
   }

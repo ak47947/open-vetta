@@ -1,13 +1,15 @@
 import type { SettingsTab } from "@shared/store/atoms";
 
 export type SettingsTabLabelKey =
-	| "tabAccount"
+	| "tabUsage"
 	| "tabGeneral"
+	| "tabLauncher"
 	| "tabAppearance"
 	| "tabContext"
 	| "tabModels"
 	| "tabIm"
 	| "tabWebhook"
+	| "tabSpaces"
 	| "tabArchive"
 	| "tabShortcuts"
 	| "tabAppshot"
@@ -24,8 +26,6 @@ export interface SettingsTabRegistration {
 	label: string;
 	labelKey: SettingsTabLabelKey;
 	icon: string;
-	personalOnly?: boolean;
-	requireAuth?: boolean;
 	macOnly?: boolean;
 	windowsOnly?: boolean;
 	/** 侧栏标签显示 BETA 徽标 */
@@ -40,8 +40,10 @@ export interface SettingsSectionRegistration {
 }
 
 export const SETTINGS_TABS: readonly SettingsTabRegistration[] = [
-	{ key: "account", label: "账户", labelKey: "tabAccount", icon: "icon-[mdi--account-outline]", requireAuth: true },
+	{ key: "usage", label: "用量", labelKey: "tabUsage", icon: "icon-[solar--chart-2-linear]" },
 	{ key: "general", label: "通用设置", labelKey: "tabGeneral", icon: "icon-[mdi--cog-outline]" },
+	// ⌘T 面板没有常驻入口，放在靠前的位置让人能发现它。
+	{ key: "launcher", label: "启动器", labelKey: "tabLauncher", icon: "icon-[solar--rocket-2-linear]" },
 	{
 		key: "remote",
 		label: "远程连接",
@@ -60,7 +62,7 @@ export const SETTINGS_TABS: readonly SettingsTabRegistration[] = [
 	// MCP 管理已迁至侧栏「扩展 → 连接器」
 	{ key: "im", label: "Claw", labelKey: "tabIm", icon: "icon-[mdi--message-text-outline]" },
 	{ key: "webhook", label: "消息推送", labelKey: "tabWebhook", icon: "icon-[mdi--webhook]" },
-	// { key: "team", label: "团队管理", labelKey: "tabTeam", icon: "icon-[mdi--account-group-outline]", personalOnly: true },
+	{ key: "spaces", label: "工作空间", labelKey: "tabSpaces", icon: "icon-[solar--widget-linear]" },
 	{ key: "archive", label: "已归档", labelKey: "tabArchive", icon: "icon-[mdi--archive-outline]" },
 	{ key: "shortcuts", label: "快捷键", labelKey: "tabShortcuts", icon: "icon-[mdi--keyboard-outline]" },
 	{
@@ -89,34 +91,40 @@ export const SETTINGS_TABS: readonly SettingsTabRegistration[] = [
 ] as const;
 
 export const SETTINGS_SECTIONS = [
+	{ tab: "usage", id: "usage-overview", title: "概览", titleKey: "section_usage-overview" },
+	{ tab: "usage", id: "usage-trend", title: "用量趋势", titleKey: "section_usage-trend" },
+	{ tab: "usage", id: "usage-models", title: "模型明细", titleKey: "section_usage-models" },
+	{ tab: "usage", id: "usage-heatmap", title: "每日活跃", titleKey: "section_usage-heatmap" },
 	{ tab: "general", id: "general-basics", title: "基础", titleKey: "section_general-basics" },
 	{ tab: "general", id: "general-notifications", title: "通知", titleKey: "section_general-notifications" },
 	{ tab: "general", id: "general-network", title: "网络代理", titleKey: "section_general-network" },
 	{ tab: "general", id: "general-app", title: "应用", titleKey: "section_general-app" },
 	{ tab: "general", id: "general-developer", title: "开发者", titleKey: "section_general-developer" },
+	{ tab: "launcher", id: "launcher-features", title: "能做什么", titleKey: "section_launcher-features" },
+	{ tab: "launcher", id: "launcher-shortcut", title: "快捷键", titleKey: "section_launcher-shortcut" },
 	{ tab: "remote", id: "remote-devices", title: "已配对的手机", titleKey: "section_remote-devices" },
 	{ tab: "remote", id: "remote-pairing", title: "添加手机", titleKey: "section_remote-pairing" },
 	{ tab: "remote", id: "remote-cloud", title: "外网访问", titleKey: "section_remote-cloud" },
 	{ tab: "sshHosts", id: "ssh-hosts-list", title: "主机列表", titleKey: "section_ssh-hosts-list" },
 	{ tab: "appearance", id: "appearance-mode", title: "外观模式", titleKey: "section_appearance-mode" },
 	{ tab: "appearance", id: "appearance-ui-theme", title: "界面主题", titleKey: "section_appearance-ui-theme" },
-	{ tab: "appearance", id: "appearance-cursor", title: "鼠标指针", titleKey: "section_appearance-cursor" },
 	{ tab: "appearance", id: "appearance-theme", title: "主题", titleKey: "section_appearance-theme" },
+	{ tab: "appearance", id: "appearance-ui-zoom", title: "界面大小", titleKey: "section_appearance-ui-zoom" },
+	{
+		tab: "appearance",
+		id: "appearance-chat-background",
+		title: "聊天外观",
+		titleKey: "section_appearance-chat-background",
+	},
 	{ tab: "appearance", id: "appearance-ornament", title: "装饰件", titleKey: "section_appearance-ornament" },
 	{ tab: "appearance", id: "appearance-texture", title: "纹理", titleKey: "section_appearance-texture" },
-	{ tab: "appearance", id: "appearance-sidebar", title: "侧边栏样式", titleKey: "section_appearance-sidebar" },
+	{ tab: "appearance", id: "appearance-app-icon", title: "应用图标", titleKey: "section_appearance-app-icon" },
 	{ tab: "appearance", id: "appearance-language", title: "语言", titleKey: "section_appearance-language" },
-	{ tab: "account", id: "account-profile", title: "个人信息", titleKey: "section_account-profile" },
-	{ tab: "team", id: "team-management", title: "团队管理", titleKey: "section_team-management" },
-	{ tab: "team", id: "team-my-teams", title: "我的团队", titleKey: "section_team-my-teams" },
-	{ tab: "team", id: "team-detail-info", title: "团队详情", titleKey: "section_team-detail-info" },
-	{ tab: "team", id: "team-members", title: "成员列表", titleKey: "section_team-members" },
 	{ tab: "models", id: "models-thinking", title: "思考模式", titleKey: "section_models-thinking" },
+	{ tab: "models", id: "models-default", title: "默认模型", titleKey: "section_models-default" },
 	{ tab: "models", id: "models-preset-providers", title: "预设服务商", titleKey: "section_models-preset-providers" },
 	{ tab: "models", id: "models-providers", title: "服务商", titleKey: "section_models-providers" },
 	{ tab: "models", id: "models-transport", title: "OpenAI Responses 传输方式", titleKey: "section_models-transport" },
-	{ tab: "mcp", id: "mcp-remote-list", title: "远程 MCP", titleKey: "section_mcp-remote-list" },
-	{ tab: "mcp", id: "mcp-remote-available", title: "可添加的远程 MCP", titleKey: "section_mcp-remote-available" },
 	{ tab: "mcp", id: "mcp-builtin-list", title: "推荐 MCP", titleKey: "section_mcp-builtin-list" },
 	{ tab: "mcp", id: "mcp-builtin-available", title: "可添加的推荐 MCP", titleKey: "section_mcp-builtin-available" },
 	{ tab: "mcp", id: "mcp-server-list", title: "自定义 MCP", titleKey: "section_mcp-server-list" },
@@ -137,9 +145,9 @@ export const SETTINGS_SECTIONS = [
 	{ tab: "im", id: "imbridge-logs", title: "实时日志", titleKey: "section_imbridge-logs" },
 	{ tab: "webhook", id: "webhook-channels", title: "渠道列表", titleKey: "section_webhook-channels" },
 	{ tab: "shortcuts", id: "shortcuts-global", title: "全局快捷键", titleKey: "section_shortcuts-global" },
-	{ tab: "shortcuts", id: "shortcuts-quickpanel", title: "快捷面板", titleKey: "section_shortcuts-quickpanel" },
 	{ tab: "appshot", id: "appshot-gesture", title: "触发快捷键", titleKey: "section_appshot-gesture" },
 	{ tab: "appshot", id: "appshot-permissions", title: "权限", titleKey: "section_appshot-permissions" },
+	{ tab: "spaces", id: "workspaces", title: "工作空间", titleKey: "section_workspaces" },
 	{ tab: "archive", id: "archived-list", title: "归档列表", titleKey: "section_archived-list" },
 	{ tab: "context", id: "agent-personalization", title: "个性化", titleKey: "section_agent-personalization" },
 	{ tab: "context", id: "agent-images", title: "图片", titleKey: "section_agent-images" },
@@ -148,8 +156,9 @@ export const SETTINGS_SECTIONS = [
 	{ tab: "knowledge", id: "knowledge-processing", title: "后台加工", titleKey: "section_knowledge-processing" },
 	{ tab: "knowledge", id: "knowledge-actions", title: "手动操作", titleKey: "section_knowledge-actions" },
 	{ tab: "pet", id: "pet-display", title: "显示与窗口", titleKey: "section_pet-display" },
+	{ tab: "pet", id: "pet-behavior", title: "行为", titleKey: "section_pet-behavior" },
+	{ tab: "pet", id: "pet-actions", title: "动作", titleKey: "section_pet-actions" },
 	{ tab: "pet", id: "pet-decoration", title: "桌宠装饰", titleKey: "section_pet-decoration" },
-	{ tab: "pet", id: "pet-bubble", title: "气泡样式", titleKey: "section_pet-bubble" },
 	{ tab: "pet", id: "pet-developer", title: "开发调试", titleKey: "section_pet-developer" },
 ] as const satisfies readonly SettingsSectionRegistration[];
 
@@ -173,22 +182,14 @@ export function findSettingsSection(id: string): SettingsSectionRegistration | u
 }
 
 export interface SettingsTabVisibilityContext {
-	isPersonal: boolean;
-	hasAuthUser: boolean;
 	isMac: boolean;
 	isWindows: boolean;
 }
 
-/** 标签可见性：平台与账号维度的过滤规则集中在此，便于测试与复用。 */
+/** 标签可见性：平台维度的过滤规则集中在此，便于测试与复用。 */
 export function filterVisibleSettingsTabs(
 	tabs: readonly SettingsTabRegistration[],
-	{ isPersonal, hasAuthUser, isMac, isWindows }: SettingsTabVisibilityContext,
+	{ isMac, isWindows }: SettingsTabVisibilityContext,
 ): readonly SettingsTabRegistration[] {
-	return tabs.filter(
-		(tab) =>
-			(!tab.personalOnly || isPersonal) &&
-			(!tab.requireAuth || hasAuthUser) &&
-			(!tab.macOnly || isMac) &&
-			(!tab.windowsOnly || isWindows),
-	);
+	return tabs.filter((tab) => (!tab.macOnly || isMac) && (!tab.windowsOnly || isWindows));
 }

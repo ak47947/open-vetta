@@ -67,7 +67,7 @@ export interface PluginCommandDependencies {
 
 export type PluginAddCommandDependencies = PluginCommandDependencies;
 
-const HELP_TEXT = `Vetta plugin manager
+const HELP_TEXT = `Atrix plugin manager
 
 Usage:
   vetta-plugin-cli add <npm-package|package-path|http-url> [--json]
@@ -230,7 +230,7 @@ function parseInitHubCommand(argv: string[]): PluginInitCommand {
 	if (typeof minAppVersion !== "string" || minAppVersion.length === 0) {
 		return {
 			type: "error",
-			message: "Missing --min-app-version <x.y.z> (the oldest Vetta Desktop version your abilities support)",
+			message: "Missing --min-app-version <x.y.z> (the oldest Atrix Desktop version your abilities support)",
 		};
 	}
 	const [targetDir, unexpected] = parsed.positionals;
@@ -348,7 +348,7 @@ function isDirectorySource(source: string): boolean {
  * 把「装当前这个工程」翻译成一个具体的归档路径。
  *
  * 这条路径是给 `install:vetta` 这类脚本用的：作者（或 Agent）在插件目录里跑一条命令就
- * 装进 Vetta，不必记住产物叫什么名字。找不到产物时给出该跑的那条命令，而不是报一个
+ * 装进 Atrix，不必记住产物叫什么名字。找不到产物时给出该跑的那条命令，而不是报一个
  * 「文件不存在」让人自己猜。
  */
 function resolveProjectArchive(source: string): { archivePath: string; project: PluginProject } {
@@ -820,7 +820,7 @@ async function runWatchCommand(
 				? `${JSON.stringify({ ok: true, result })}\n`
 				: command.stop
 					? `Stopped hot reload for ${project.pluginId}.\n`
-					: `Hot reload on for ${project.pluginId}. Vetta now loads it from ${project.root}.\n`,
+					: `Hot reload on for ${project.pluginId}. Atrix now loads it from ${project.root}.\n`,
 		);
 		return 0;
 	} catch (error) {

@@ -7,7 +7,12 @@ import { HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { parse } from "yaml";
 import { referencedFileName, updaterMetadataPattern } from "./updater-metadata.mjs";
-import { windowsSupplementalArtifactNames } from "./windows-packaging-contract.mjs";
+import {
+	WINDOWS_LEGACY_PRODUCT_NAMES,
+	WINDOWS_PRODUCT_NAME,
+	WINDOWS_RELEASE_ARCHS,
+	windowsSupplementalArtifactNames,
+} from "./windows-packaging-contract.mjs";
 
 const projectRoot = join(import.meta.dirname, "..");
 const releaseDir = join(projectRoot, "release");
@@ -147,12 +152,12 @@ export async function collectArtifacts(directory = releaseDir) {
 	}
 	if (releaseVersions.size === 1) {
 		const [releaseVersion] = releaseVersions;
-		const supplementalCandidates = [
-			...windowsSupplementalArtifactNames(releaseVersion, "Atrix"),
-			...windowsSupplementalArtifactNames(releaseVersion, "Vetta"),
-		];
-		for (const fileName of supplementalCandidates) {
-			if (availableFiles.has(fileName)) artifacts.add(fileName);
+		for (const arch of WINDOWS_RELEASE_ARCHS) {
+			for (const productName of [WINDOWS_PRODUCT_NAME, ...WINDOWS_LEGACY_PRODUCT_NAMES]) {
+				for (const fileName of windowsSupplementalArtifactNames(releaseVersion, arch, productName)) {
+					if (availableFiles.has(fileName)) artifacts.add(fileName);
+				}
+			}
 		}
 	}
 

@@ -1,3 +1,5 @@
+import type { FileLinkMenuLabels } from "./FileLinkBadge";
+
 export interface RichContentLabels {
 	preview: string;
 	source: string;
@@ -14,6 +16,7 @@ export interface RichContentLabels {
 	loading?: string;
 	retry?: string;
 	enlarge?: string;
+	copyImage?: string;
 	save?: string;
 	diagram?: string;
 	imageFailed?: string;
@@ -36,6 +39,7 @@ export const defaultRichContentLabels: RichContentLabels = {
 	loading: "Loading preview…",
 	retry: "Retry",
 	enlarge: "Enlarge",
+	copyImage: "Copy image",
 	save: "Save",
 	diagram: "Diagram",
 	imageFailed: "Could not load image.",
@@ -45,5 +49,7 @@ export const defaultRichContentLabels: RichContentLabels = {
 export interface MarkdownLabels {
 	copy: string;
 	copied: string;
+	/** 文件徽标右键菜单文案；缺省时不出菜单。 */
+	fileLink?: FileLinkMenuLabels;
 	rich?: RichContentLabels;
 }

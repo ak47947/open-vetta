@@ -12,7 +12,6 @@ apps/desktop/src/renderer/domains/project/components/sidebar/
   SidebarTopBar.tsx
   SidebarNavigation.tsx
   SidebarNavItemButton.tsx
-  SidebarProjectsSection.tsx
   SidebarBottomBar.tsx
   types.ts
   useSidebarModel.ts
@@ -105,7 +104,7 @@ components: {
 
 这类替换适合只换一个局部组件，不需要重写完整 `regions.sidebar`。
 
-Override 组件必须兼容默认组件 props。`sidebar.navItem` 要保留 ref、`onClick`、DOM props 和 `classNames`；`sidebar.settingsTrigger` 要保留 ref 和 PopoverTrigger 注入的 props，否则会破坏弹层打开行为。
+Override 组件必须兼容默认组件 props。`sidebar.navItem` 要保留 ref、`onClick`、DOM props 和 `classNames`；`sidebar.settingsTrigger` 要保留 ref、`onClick`、DOM props 和 `classNames`；它不再承载弹层，点击后直接进入设置页。
 
 ## Surface Slot
 
@@ -118,7 +117,6 @@ type ThemeSurfaceSlot =
   | "sidebar.navigation"
   | "sidebar.projects"
   | "sidebar.bottomBar"
-  | "sidebar.settingsMenu"
   | "sidebar.messageCenter";
 ```
 
@@ -130,7 +128,7 @@ type ThemeSurfaceSlot =
 - `sidebar.projects`
 - `sidebar.bottomBar`
 
-`sidebar.settingsMenu` 和 `sidebar.messageCenter` 已预留，适合后续给弹层接入 frame、背景或外壳装饰。
+`sidebar.messageCenter` 已预留，适合后续给弹层接入 frame、背景或外壳装饰。
 
 ## ThemeSurface
 
@@ -253,8 +251,8 @@ SidebarTopBar
 SidebarNavigation
   导航区、选中指示器、导航按钮
 
-SidebarProjectsSection
-  过滤器、新建项目、项目列表容器
+ProjectsPanel
+  项目折叠区、新建项目、默认对话列表
 
 SidebarBottomBar
   设置菜单、消息中心入口
@@ -267,7 +265,7 @@ add-project/
   新建项目菜单
 
 filters/
-  侧边栏过滤器
+  默认对话筛选器
 
 message-center/
   消息中心触发器、弹层、tab、列表

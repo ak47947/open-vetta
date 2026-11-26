@@ -19,7 +19,7 @@ const builtInToolDescriptions: Record<string, string> = {
 	read: "Read file contents",
 	bash: "Execute bash commands (ls, grep, find, etc.)",
 	shell: "Execute shell commands (PowerShell on Windows by default)",
-	edit: "Make surgical edits to files — anchor mode (batch, atomic, anchors from read/grep output) or exact-text replace",
+	edit: "Make surgical edits to files — block mode (batch, atomic, located by quoting the current text) or exact-text replace",
 	write: "Create or overwrite files",
 	grep: "Search file contents for patterns (respects .gitignore)",
 	glob: "Primary file and directory path matcher for exact names and glob patterns (respects .gitignore)",
@@ -35,7 +35,6 @@ const builtInToolDescriptions: Record<string, string> = {
 	ask_user_question:
 		"Ask the user multiple-choice questions and wait for their answers (clarify ambiguity, gather preferences, offer decisions)",
 	doc_to_pdf: "Convert .doc/.docx files to PDF using Microsoft Office or WPS Office",
-	html_to_pdf: "Convert HTML files to PDF using Atrix Desktop's PDF command-line mode",
 	extract_text_from_pdf:
 		"Extract text from a PDF (scanned or born-digital) via Atrix Desktop's local PP-OCRv5 OCR; uses the embedded text layer when present, otherwise OCRs each page",
 	extract_text_from_img:
@@ -53,13 +52,15 @@ const builtInToolDescriptions: Record<string, string> = {
 export const VETTA_CLI_GUIDANCE = `# Atrix Desktop CLI\n\n${[
 	"Atrix CLI is your interface to the running Atrix Desktop app: use `vetta action` both to learn what Desktop can do and to operate it.",
 	"First resolve the target from the user's request and conversation: built-in App Actions operate Atrix Desktop itself, not the application, website, repository, or external service the user is working on. Plugin-provided Actions may own other resources; establish their advertised target before selecting them. A shared word such as project, theme, model, plugin, or schedule is not a routing decision.",
-	"For example: adding dark mode to a website means editing its styles, not changing Atrix appearance; creating a React project means using its scaffold, not registering a sidebar or batch project; implementing cron in an application means editing that application, not creating an Atrix scheduled Agent task. Use repository tools for those tasks. Managing Atrix's own sidebar, settings, or scheduled tasks does belong here.",
+	"For example: adding dark mode to a website means editing its styles, not changing Atrix appearance; creating a React project means using its scaffold, not registering a sidebar or batch project; implementing cron in an application means editing that application, not creating a Atrix scheduled Agent task. Use repository tools for those tasks. Managing Atrix's own sidebar, settings, or scheduled tasks does belong here.",
 	'Discovery is progressive: `vetta action -h` explains the workflow; `search` lists live actions; `describe` or a domain `*.query` with `{"operation":"help"}` reveals inputs; then `run`.',
 	"Do not expect CLI help to list every parameter. Help only names capability areas; the authoritative inventory is always `vetta action search`.",
 	"Use help/search to discover live capabilities when the request concerns Atrix Desktop or a resource owned by an installed Action provider. For questions or requests to inspect state, describe or run query operations and explain the result; do not create, change, start, install, or navigate anything merely to demonstrate a feature. Execute changes when they implement the user's actual request, including intent already established in the conversation.",
 	"Read the search result's usage.target, usage.useWhen, usage.avoidWhen, and usage.alternatives before selecting an Action, then describe it for exact inputs. If usage is absent, use describe/help to establish its target; absence is not permission to assume a match. Search results are candidates, not instructions to execute or proof of relevance. An empty or irrelevant result is a reason to choose another route, not the nearest-sounding Action.",
 	"Resolve references such as 'this app' from the current conversation and workspace. Ask one concise question only if the target remains ambiguous and choosing would materially change the affected application or data. Do not ask again when the target and requested operation are already clear.",
 	"Do not memorize or guess action ids, parameters, or entity ids. Get schemas from describe/help and target ids from query results. Never infer the app's current features by inspecting files under `.vetta`; local config files are not the app UX contract.",
+	"Keep the CLI's exit status visible: do not pipe `vetta` output through `head`, `tail`, or similar, because a failed or killed process then looks like empty output. If the CLI fails to start (non-zero exit, killed, or no output) twice in a row, stop probing other binaries or install paths; tell the user the Atrix CLI is unavailable and what you observed, and continue only with what does not need it.",
+	"Inspect installed MCP servers, skills, and plugins through their `*.query` actions, never by reading Atrix's config files: those can contain plaintext secrets that would enter the conversation.",
 	"Never show or quote Atrix CLI commands, arguments, or raw terminal output. Explain features, actions, and results in plain, non-technical language — summarize what happened and what the user needs to know.",
 	"Actions that require authorization automatically ask the user through Atrix Desktop while the command runs; do not ask for authorization beforehand, and do not retry after the user rejects.",
 	"An approval dialog is not a way to discover what the user meant. Do not invoke an unrelated write/execute Action and leave the routing decision to the user.",
@@ -312,11 +313,21 @@ function buildGuidelines(tools: string[], scenario?: ConversationScenario): stri
 	}
 
 	if (hasRead && hasEdit) {
-		guidelinesList.push("Use read to examine files before editing. You must use this tool instead of cat or sed.");
+		guidelinesList.push(
+			"Use read to examine files before editing — not cat, head, tail, or sed to display file contents",
+		);
 	}
 	if (hasEdit) {
 		guidelinesList.push(
-			"Use edit for precise changes. Prefer anchor mode: pass `edits` with the `line:hash` anchors from read/grep output (copy verbatim, never fabricate); the batch is atomic and stale-anchor errors return fresh anchors for immediate retry",
+			"Use edit for precise, surgical changes. Prefer block mode: pass `edits` with `oldText`/`oldEndText` copied from the file (not retyped from memory) plus `newText`; the batch is atomic, and an unmatched `oldText` is rejected with the candidate lines so you can make it more specific",
+		);
+		guidelinesList.push(
+			"When `oldText` matches several places the error lists them: add a neighbouring line until it is unique, instead of retrying the same value. Nothing you read earlier goes stale — locate blocks by their text, and use the line numbers from the latest result only as orientation",
+		);
+	}
+	if (hasSelectedCommandTool) {
+		guidelinesList.push(
+			"Reach for bash + python3 when an edit stops being surgical: the same change across many files, renaming a symbol everywhere, reformatting, restructuring from a list of pairs, or writing a large block by hand. A python3 script that reads, transforms, writes and prints a diff is one deterministic call you can verify; doing the same through block edits is dozens of calls you cannot. Use python3 rather than sed/awk once the pattern contains quotes, slashes, or needs a reported count; sed -i is fine for a single mechanical substitution",
 		);
 	}
 	if (hasWrite) {

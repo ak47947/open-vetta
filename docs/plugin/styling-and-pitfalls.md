@@ -176,11 +176,43 @@ vettaPluginFederation({
 
 默认路径仍是：自写 JSX + 语义 class（`bg-background` / `text-foreground`…）。`@vetta-org/ui` 适合按钮、开关、对话框等控件统一，不是强制。未导入它的插件不要开启 `hostUi`，也不要声明该依赖。
 
+### 可用组件速查
+
+| 组件 | 用途 |
+| --- | --- |
+| `Button` | 按钮。`variant`：`default` / `primary` / `outline` / `secondary` / `ghost` / `destructive` / `link`，以及 **`field`**（设置页里设置项右侧的操作按钮：muted 底、无边框、12px，与下拉 / 输入框同皮）；`size`：`xs` / `sm` / `default` / `lg` / `icon-xs` / `icon-sm` / `icon` / `icon-lg` |
+| `ButtonGroup` + `ButtonGroupItem` | **按钮组**：半透明胶囊里并排若干操作按钮，用于悬浮在内容之上的工具条（如页头右上角）。胶囊外缘用内阴影做出玻璃边：只在深色里上沿亮、下沿淡并带投影；浅色没有投影和高亮。没有跟随指针的高光。`ButtonGroup` 属性：`shape`（`"pill"` 胶囊，默认 / `"square"` 圆角方形）、`blur`（背景模糊，默认开；贴在纯色背景上可关）。`ButtonGroupItem` 属性：`icon`、`label`（不传即纯图标按钮，须配 `title` / `aria-label`）、`badge`（数字计数，超过 99 显示 `99+`；`true` 为小红点；也可传节点）、`active`（选中态，同时设 `aria-pressed`），其余同原生 `button`。选中项两侧的分隔线会自动隐藏 |
+| `SessionTopItem` / `SessionTopGroup` | 宿主内部用的顶栏按钮：`ButtonGroupItem` 外观，点击向下弹出气泡（`popoverContent`）或下拉菜单（`menuItems`）。插件**不用**它来做顶栏动作——`registerHeaderAction` 是声明式的，宿主统一渲染并管理收纳与排序，详见 [ui-slots](./ui-slots.md#会话页顶栏动作-registerheaderaction)；它仍可用于你自己页面里的同款按钮 |
+| `DropdownMenu*` | 菜单（`DropdownMenuTrigger` / `Content` / `Item` / `Separator` / `RadioGroup` / `Sub` …） |
+| `Select*`、`SELECT_TRIGGER_CLASS`、`SELECT_PANEL_CLASS` | 下拉选择（Radix）；后两个常量是设置页下拉的触发器 / 面板皮肤，自拼触发器时用 |
+| `Popover*` / `Dialog*` / `Drawer*` / `Switch` / `Slider` / `StepSlider` / `Stepper` / `Input` / `Calendar` / `DatePicker` / `Spin` / `cn` | 其余基础控件 |
+| `ColorSwatchPicker` | **色点选择器**：一排圆形色块，选中项用同色描边圈出，下方显示当前颜色名。`value` / `onChange` 受控；`options` 传 `{ value, label }[]`（`value` 支持 `#rgb` / `#rrggbb` / `rgb()` / `hsl()`，内部统一规范到 `#rrggbb` 回写）。`allowCustom` 打开后末尾多一枚彩虹色点，点开是宿主取色面板：可以直接吸屏幕颜色（`EyeDropper`，宿主不支持时该按钮不出现）、拖明度 / 饱和度、拽色相滑轨，或者粘贴 hex / `rgb()` / `hsl()`。`defaultOption={{ label }}` 会在最前面多一枚空心色点，表示「不指定颜色、跟随宿主主题」，选中它时 `onChange(null)`。`showLabel={false}` 去掉色点下方的颜色名（外层已有「颜色」这类标题时用）。`size`（`sm` / `default`）、`disabled`，文案（标题、自定义、无障碍名）全走 `labels`；`labels.title` 传空串可去掉标题 |
+| `ColorPickerPanel` | 上面那个取色面板本身（无弹层外壳），用于插件自己的浮层里。`value` 为 `#rrggbb`、`onChange` 实时回调；不提供 alpha，颜色一律按不透明处理 |
+| `parseColor` / `normalizeColor` / `toHex` / `isSameColor` / `rgbToHsv` / `hsvToRgb` / `hueColor` | 同一套颜色纯函数：解析各种写法、统一成 `#rrggbb`、判断两个写法是否同一颜色、RGB ↔ HSV 换算。插件自己存颜色（例如给卡片配色）时用它比较与渲染，别各写一份 |
+| `Stepper` | **数字步进器**：`− 数值 +` 三段式，用于设置页里改秒数、端口、并发数这类离散数值。`value` / `onValueChange` 受控；`min` / `max` / `step` 决定范围与网格（以 `min` 或缺省 0 为原点取整），`precision` 控制显示小数位（缺省按 `step` 推断，所以 `step={0.1}` 不会显示成 `0.30000000000000004`）；`suffix` 显示单位（`"s"` / `"px"` / `"%"`），不参与编辑。数值可直接点进去改，回车或失焦提交、Esc 撤销，非法输入按撤销处理而不是静默吞成 0；按住加减号会连续变化（450ms 后每 90ms 一步）。到达 `min` / `max` 时对应按钮 disabled，用户能看见「到头了」。按钮的无障碍名由 `labels` 传入（缺省英文 `Increase` / `Decrease`），**中文界面请自己传本地化文案** |
+
+```tsx
+import { Button, ButtonGroup, ButtonGroupItem } from "@vetta-org/ui";
+
+function Toolbar({ unread, panelOpen, onRun, onTogglePanel }: Props) {
+  return (
+    <ButtonGroup>
+      <ButtonGroupItem icon={<PlayIcon />} title="运行" onClick={onRun} />
+      <ButtonGroupItem icon={<BellIcon />} label="通知" badge={unread} />
+      <ButtonGroupItem icon={<SidebarIcon />} title="面板" active={panelOpen} onClick={onTogglePanel} />
+    </ButtonGroup>
+  );
+}
+
+// 设置项右侧的操作按钮
+<Button variant="field" onClick={onExport}>导出</Button>
+```
+
 顶层不要对 `@vetta-org/ui` 做立即求值（与 React 相同，见上文「MF 顶层 JSX 陷阱」）——在组件函数内使用即可。
 
 ## 按需：`@vetta-org/theme-ui/plugin-ui` 宿主成品 UI
 
-少量经过明确审核的宿主成品组件会从窄入口 `@vetta-org/theme-ui/plugin-ui` 开放。
+少量经过明确审核的宿主成品组件（模型选择器视图、`MotionSelect`、`SettingSection` / `SettingRow` / `SettingHeading`、供应商图标等）会从窄入口 `@vetta-org/theme-ui/plugin-ui` 开放。
 它不是默认共享依赖；只有实际使用这些组件的插件才应开启：
 
 ```ts
@@ -194,6 +226,46 @@ vettaPluginFederation({
 `workspace:*`）。`hostThemeUi` 只让运行时从宿主共享域取组件，不会把 Theme UI
 打进插件 bundle。不要为了消除构建警告给未使用该入口的插件增加依赖；也不要把
 `@vetta-org/theme-ui` 的其它业务入口当作插件公共 API。
+
+### 宿主成品组件
+
+下列组件与桌面端自己用的是同一份，用来在插件的设置面板、列表里做出一致的外观。全部是纯展示组件，
+文案与数据都由调用方经 props 传入：
+
+| 组件 | 用途 |
+| --- | --- |
+| `MotionSelect` | 设置页下拉：`value` / `onValueChange` / `options`（`{ value, label, disabled?, title? }`）/ `placeholder` / `disabled` / `triggerClassName`。面板宽度随选项内容撑开，有轻量淡入；视觉与 `@vetta-org/ui` 的 `Select` 一致，但关闭后触发器文案不会丢 |
+| `SettingSection` | 设置分组卡片：可选标题 / 说明 + 圆角边框容器。`section` 传 `{ id, title? }`，`id` 用作锚点 |
+| `SettingRow` | 分组卡片里的一行设置项卡片：左侧 `title` / `description`，右侧放控件（`children`）；`border={false}` 去掉底部分隔线（最后一行） |
+| `SettingHeading` | 与分组同款的 15px 小节标题。**必填 `section={{ id, title? }}`**（与 `SettingSection` 同形）：只传 `title` 会在渲染期读 `section.id` 而抛错 |
+| `SegmentedControl` | **分段控件**：胶囊里并排若干互斥选项，选中项带滑动指示器（弹簧动画），与宿主设置页、能力页同一套。`items` 传 `{ key, label, icon?, count?, badge? }[]`（`count` 是跟在标题后的灰字计数，0 不显示；`badge` 是红色未读徽标）、`value` / `onChange` 受控，泛型推断 `key` 联合类型；`className` 加在容器上，`suppressLayoutAnimation` 在容器尺寸动画期间关掉指示器滑动以免抖动 |
+| `VettaKbd` | **快捷键键帽**：`keys` 传快捷键串（`"mod+shift+k"`）或键位数组，渲染成一组浮雕键帽，与设置页快捷键、应用快照的键盘预览同一套质感。`mod` 在 macOS 显示 ⌘、Windows 显示 Ctrl；`ctrl` 始终是物理 Control 键（mac 上 ⌃）；需要完全分系统时把该项写成 `{ mac, windows, linux }`。另有 `size`（`xs` 默认 / `sm`）、`separator`（键之间显示 `+`）、`platform`（强制平台，缺省按窗口判断）。键帽整体带读屏文案（「⌘ K」读作「Command K」） |
+
+```tsx
+import { Button } from "@vetta-org/ui";
+import { MotionSelect, SettingRow, SettingSection } from "@vetta-org/theme-ui/plugin-ui";
+
+<SettingSection section={{ id: "my-plugin-general", title: "常规" }}>
+  <SettingRow title="输出格式" description="导出时使用的默认格式">
+    <MotionSelect
+      value={format}
+      onValueChange={setFormat}
+      options={[
+        { value: "md", label: "Markdown" },
+        { value: "pdf", label: "PDF" },
+      ]}
+    />
+  </SettingRow>
+  <SettingRow title="立即导出" border={false}>
+    <Button variant="field" onClick={onExport}>导出</Button>
+  </SettingRow>
+</SettingSection>
+```
+
+只是要让用户选一个模型时，不要用这里的 `ModelSelectorView` 自己拼数据，直接用
+`@vetta-org/plugin-sdk` 的 `ModelPicker`（见 [ai](./ai.md#让用户选模型modelpicker)）：
+数据和行为都由宿主提供，与输入栏的模型选择器完全一致，也不需要开启 `hostThemeUi`。
+`ModelSelectorView` 只留给需要完全自定义清单的场景。
 
 ## 缓存刷新
 

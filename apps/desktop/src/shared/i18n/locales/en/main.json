@@ -2,9 +2,15 @@
 	"tray": {
 		"showWindow": "Show Window",
 		"hideWindow": "Hide Window",
-		"quitVetta": "Quit Atrix",
+		"quitAtrix": "Quit Atrix",
 		"quit": "Quit",
 		"hideToTray": "Hide to Tray"
+	},
+	"quitConfirmation": {
+		"title": "Quit Atrix?",
+		"detail": "Saved conversations will be here when you return. Running tasks will stop.",
+		"quit": "Quit",
+		"cancel": "Cancel"
 	},
 	"menu": {
 		"app": {
@@ -81,7 +87,7 @@
 	"mcpOAuth": {
 		"authorizationSuccessful": "Authorization successful",
 		"authorizationFailed": "Authorization failed",
-		"returnToVetta": "You can close this window and return to Atrix.",
+		"returnToAtrix": "You can close this window and return to Atrix.",
 		"closeAndRetry": "You can close this window and try again in Atrix.",
 		"missingAuthorizationCode": "Missing authorization code",
 		"callbackAlreadySettled": "OAuth callback already settled",

@@ -2,11 +2,9 @@ import "./telemetry/bootstrap.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { URL } from "node:url";
 import { getVettaHomePath, VETTA_HOME_ENV } from "@vetta/action-rpc";
-import { app, type BrowserWindow, dialog, ipcMain, nativeImage, nativeTheme, protocol, session, shell } from "electron";
+import { app, type BrowserWindow, dialog, ipcMain, nativeTheme, protocol, session, shell } from "electron";
 import { APP_RUNTIME_NAME } from "../shared/app-identity.js";
-import { isCloudBuildEnabled } from "../shared/feature-flags.js";
 import { stopAllOpenMarketplaceMcpRuntimes } from "./abilities/open-marketplace/open-marketplace-mcp-runtime-host.js";
 import { ActionApprovalBroker } from "./app-actions/approval-broker.js";
 import { createAppActionSystem } from "./app-actions/index.js";
@@ -15,6 +13,7 @@ import { APP_ASSET_PROTOCOL_PRIVILEGE, registerAppAssetProtocol } from "./app-as
 import { createAppDebugRuntime } from "./app-debug/index.js";
 import { createDebugRpcRuntime } from "./app-debug/rpc.js";
 import { configureRendererCdp } from "./app-debug/ui/renderer-cdp.js";
+import { applyAppIcon } from "./app-icon/app-icon-service.js";
 import { registerAppLifecycleIpc } from "./app-lifecycle.js";
 import { installApplicationMenu } from "./app-menu.js";
 import { initializeAppMonitor, shutdownAppMonitor } from "./app-monitor/app-monitor-service.js";
@@ -26,7 +25,6 @@ import { parseAgentRpcCommand, runAgentRpcCommand } from "./cli/agent-rpc-comman
 import { parseHelpCliCommand, runHelpCliCommand } from "./cli/help-command.js";
 import { parseOcrCliCommand, runOcrCliCommand } from "./cli/ocr-command.js";
 import { parsePdfCliCommand, runPdfCliCommand } from "./cli/pdf-command.js";
-import type { CloudMainHandle } from "./cloud/index.js";
 import { ensureDevCliShim, ensureDevVettaCliShim, ensureVettaCommandShim } from "./dev-cli-shim.js";
 import {
 	getDiagnosticsLogPath,
@@ -38,6 +36,7 @@ import { FILE_PROTOCOL_PRIVILEGE, registerFileProtocolHandler } from "./file-pro
 import { fixPath } from "./fix-path.js";
 import { initAppLanguage } from "./i18n/index.js";
 import { getImHost } from "./im-host/index.js";
+import { registerAppIconIpc } from "./ipc/app-icon.js";
 import { syncAppshotGesture } from "./ipc/appshot.js";
 import { persistVettaCliPaths } from "./ipc/fs.js";
 import { registerI18nIpc } from "./ipc/i18n.js";
@@ -48,8 +47,8 @@ import {
 	registerSchedulerIpc,
 	teardownAllIpc,
 } from "./ipc/index.js";
-import { syncQuickPanelTrigger } from "./ipc/quickpanel.js";
 import { disposeAllTerminals } from "./ipc/terminal.js";
+import { registerUiZoomIpc } from "./ipc/ui-zoom.js";
 import { registerKnowledgeIpc } from "./knowledge/ipc.js";
 import { reloadKnowledgePoller, shutdownKnowledgePoller } from "./knowledge/poller.js";
 import { getLocalRpcServerEndpointFilePath } from "./local-rpc/endpoint-file.js";
@@ -68,8 +67,6 @@ import { migrateLegacyPluginSettings } from "./plugins/plugin-legacy-settings-mi
 import { createDesktopPluginPackageOpenService } from "./plugins/plugin-package-open.js";
 import { PLUGIN_PROTOCOL_PRIVILEGES, registerPluginProtocols } from "./plugins/plugin-protocol.js";
 import { refreshDesktopProxy } from "./proxy/proxy-host.js";
-import { stopAllUiohookConsumers } from "./quickpanel-trigger.js";
-import { createQuickPanelWindow } from "./quickpanel-window.js";
 import { isQuitCleanupStarted, runQuitCleanup, setQuitCleanup } from "./quit-cleanup.js";
 import {
 	getDesktopRemoteAccessManager,
@@ -96,6 +93,7 @@ import {
 	rebuildTrayContextMenu,
 	setHideToTrayOnClose,
 } from "./tray-manager.js";
+import { stopAllUiohookConsumers } from "./uiohook-gestures.js";
 import { consumePendingUpdateRelaunch } from "./update-relaunch-marker.js";
 import { getAppVersion, runUpgradeE2e, updaterService } from "./updater.js";
 import {
@@ -125,7 +123,6 @@ protocol.registerSchemesAsPrivileged([
 ]);
 const isMac = process.platform === "darwin";
 const appRoot = app.isPackaged ? app.getAppPath() : process.cwd();
-const buildDir = join(appRoot, "build");
 const devMainEntryPath = join(appRoot, "dist/main/index.js");
 const packagedCliBinaryName = process.platform === "win32" ? "vetta.exe" : "vetta";
 const packagedCliPlatformTag = `${process.platform}-${process.arch}`;
@@ -304,7 +301,7 @@ function attachMainWindowLifecycle(mainWindow: BrowserWindow): void {
 	});
 }
 
-// Register custom protocol for OAuth callback
+// Register the vetta:// protocol for pairing invites and other deep links
 // Windows dev mode: must pass electron.exe path and app entry as args,
 // otherwise the URL gets interpreted as a module path.
 if (!isCliMode) {
@@ -315,22 +312,12 @@ if (!isCliMode) {
 	}
 }
 
-// 云服务模块句柄：lite 构建（VETTA_CLOUD_ENABLED=false）恒为 null。
-let cloudMain: CloudMainHandle | null = null;
-
-function handleProtocolUrl(rawUrl: string): void {
-	try {
-		const parsed = new URL(rawUrl);
-		// OAuth 回调（vetta://oauth/callback）由 cloud 模块处理；
-		// lite 构建没有 cloud 模块，深链直接忽略。
-		cloudMain?.handleProtocolUrl(parsed);
-	} catch {
-		// Ignore malformed URLs
-	}
-}
-
+/**
+ * 深链入口（`vetta://pair/...` 等）：不解析具体路由，只负责把应用窗口叫回前台。
+ * OAuth 回调曾经也走这里，随云服务下线一并移除（ADR-0156）。
+ */
 function receiveProtocolUrl(rawUrl: string): void {
-	handleProtocolUrl(rawUrl);
+	void rawUrl;
 	const mainWindow = getMainWindow();
 	if (mainWindow) {
 		if (mainWindow.isMinimized()) mainWindow.restore();
@@ -364,7 +351,7 @@ if (!gotSingleLock) {
 	app.on("second-instance", (_event, argv) => {
 		const protocolUrl = argv.find((arg) => arg.startsWith(`${PROTOCOL}://`));
 		if (protocolUrl) {
-			handleProtocolUrl(protocolUrl);
+			receiveProtocolUrl(protocolUrl);
 		}
 		pluginPackageOpenService?.enqueueFromArgv(argv);
 		showMainWindow();
@@ -432,6 +419,8 @@ if (!gotSingleLock) {
 		// 若晚于 createWindow 注册会与异步 page-load 抢跑、读到 undefined 回落错语言（首帧闪）。
 		// i18n IPC 与具体窗口无关（广播给全部窗口），故脱离 registerAllIpc 独立早注册、app 级常驻。
 		registerI18nIpc();
+		registerUiZoomIpc();
+		registerAppIconIpc();
 		const appLifecycle = registerAppLifecycleIpc();
 
 		// 必须放在 whenReady 之后：早于 ready 调用时主进程 bundle identity
@@ -637,22 +626,8 @@ if (!gotSingleLock) {
 			getTray()?.setToolTip(tooltip);
 		});
 
-		// 注意：channel 名叫 auth 只是历史沿革，实际是通用的「用系统浏览器打开 URL」，
-		// 浏览器面板等非云功能也在用，因此留在宿主、不随 cloud 模块裁剪。
-		ipcMain.handle("vetta:auth:open-external", async (_event, url: string) => {
-			await openExternalUrl(url);
-		});
-
-		// Vetta 云服务（登录 / 订阅 / 远程模型）：构建期开关。lite 构建下该分支
-		// 被常量折叠，整个 cloud chunk 不进产物。
-		if (isCloudBuildEnabled()) {
-			const { startCloudMain } = await import("./cloud/index.js");
-			cloudMain = startCloudMain({ receiveProtocolUrl });
-		}
-
-		if (process.platform === "darwin") {
-			app.dock.setIcon(nativeImage.createFromPath(join(buildDir, "icon-dock.png")));
-		}
+		// Dock 图标按用户在「设置 → 外观 → 应用图标」里的选择套用（开发态默认图标用 icon-dock.png）。
+		if (process.platform === "darwin") applyAppIcon();
 
 		// 默认「对话」项目目录：保证一直存在。
 		// 顺带把 in-tree session 目录（<cwd>/.vetta/sessions）也建好，
@@ -857,13 +832,7 @@ if (!gotSingleLock) {
 
 				initializePetWindow();
 				startPetIdleGuard();
-				// 快捷面板：预创建隐藏窗口（按需 show/hide，不每次重建），随后据配置启停双击功能键监听。
-				// registerAllIpc 已注册快捷面板 IPC（含 RELOAD_HOTKEY），这里仅补窗口与初次触发器同步。
-				createQuickPanelWindow();
-				void syncQuickPanelTrigger().catch((err) => {
-					mainLog.error("failed to sync quick panel trigger", err);
-				});
-				// Appshot：据配置启停「双键同按」手势监听（与快捷面板共享 uiohook 单例）。
+				// Appshot：据配置启停「双键同按」手势监听。
 				void syncAppshotGesture().catch((err) => {
 					mainLog.error("failed to sync appshot gesture", err);
 				});
@@ -920,7 +889,7 @@ setQuitCleanup(async () => {
 		teardownBatchTasksIpc = undefined;
 	}
 
-	// 退出前注销全部全局键盘监听消费者（快捷面板双击 + appshot 双键同按）。
+	// 退出前注销全部全局键盘监听消费者（appshot 双键同按）。
 	// 必须等它完成：uiohook worker 要自己跑完 uIOhook.stop()，否则进程退出时
 	// uiohook-napi 的 env cleanup hook 会 SIGTRAP（macOS「意外退出」弹窗）。
 	const uiohookShutdown = stopAllUiohookConsumers();

@@ -24,6 +24,7 @@ description: 按产品目标选择界面、文件、Agent、Provider 或 App Act
 | 活动面板 Tab | `registerActivityTab`、`openActivityTab`、`setActivityTabVisible` | `ui.slot.activity-tab` |
 | 输入栏动作与附件 | `registerInputAction`、`setPromptAttachment` | `ui.slot.input-action` |
 | 新会话上下文区 | `registerNewSessionContext` | `ui.slot.new-session-context` |
+| 会话页顶栏动作（声明式，用户可收纳、拖动） | `registerHeaderAction` | `ui.slot.header-action` |
 | 消息卡片渲染器 | `registerCardRenderer` | `ui.slot.message` |
 | 工具调用行内渲染 | `registerToolCallSlot` | `ui.slot.tool-call` |
 | 本轮 Turn 卡 | `registerTurnCard` | `ui.slot.turn-card` |
@@ -32,6 +33,8 @@ description: 按产品目标选择界面、文件、Agent、Provider 或 App Act
 | 打开系统默认浏览器 | `openExternal` | `shell.openExternal` |
 
 组件使用宿主共享的 React 与设计令牌。注册函数返回 `Disposable`，在停用阶段释放，避免重载后重复注册。
+
+顶栏动作（`registerHeaderAction`）把状态和入口合在一格：`label` 让分支名这类状态直接出现在图标右侧，`tone` 给角标和图标加语义色，菜单项可以声明 `checkbox` / `radio` / 分组标题 / 加载 / 空态 / 一层子菜单，气泡可选宽度（`size`）或升级成宿主对话框（`host: "dialog"`）。`surfaces` 决定动作出现在会话页还是新会话页，`pin: "prefer"` 让「状态就该看得见」的动作在用户没调整过布局时优先上栏。这些字段需要 Plugin API `^2.11.0`，完整规则见 `docs/plugin/ui-slots.md`。
 
 <Callout title="样式只用 className" type="warn">
   插件与宿主共享同一个页面。在样式入口里写 `button`、`div`、`*` 这类元素选择器会污染整个界面，而且是只在用户机器上复现的那种污染。`@vetta-org/plugin-vite` 会自动把插件 CSS 限定到插件根节点并接入宿主主题令牌，`text-foreground`、`bg-card` 这类语义类直接可用。
@@ -120,7 +123,7 @@ App Action 让插件通过宿主动作系统暴露可发现命令，适合导航
 | 行为 | 涉及的注册点 |
 | --- | --- |
 | 抛出 `Plugin permission denied` 并中断调用 | `registerInputAction`、`registerCardRenderer`、`registerToolCallSlot`、`registerTurnCard`、`registerShortcutScope`、`openActivityTab`、`setActivityTabVisible`、`setPromptAttachment`、`fileExplorer.*`、`registerSystemPromptProvider`、`registerContinuationProvider`、`conversation.*`、`fs.*`、`network.*`、`storage.*`、`media.*`、`ai.*`、`command.run` |
-| 跳过该贡献并打印警告，不影响其它能力 | `registerGlobalSlot`、`registerFilePreview`、`registerActivityTab`、`registerNewSessionContext`、`agent.registerTool`、`agent.registerHook`、`appActions.register` |
+| 跳过该贡献并打印警告，不影响其它能力 | `registerGlobalSlot`、`registerFilePreview`、`registerActivityTab`、`registerNewSessionContext`、`registerHeaderAction`、`agent.registerTool`、`agent.registerHook`、`appActions.register` |
 
 <Callout title="把可选能力的注册拆开" type="info">
   一个缺失权限不应拖垮插件的其它能力。在 `activate()` 里让各项注册互相独立，避免一处抛错中断整段初始化。运行时也可以用 `ctx.permissions.has()` 自查后再决定是否注册。

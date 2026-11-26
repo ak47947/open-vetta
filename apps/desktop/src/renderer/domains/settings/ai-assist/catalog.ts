@@ -123,12 +123,7 @@ const CATALOG = [
 		contextLabelKey: "aiAssist.context.appearance",
 		defaultIntentKey: "aiAssist.defaultIntent.appearance",
 		placeholderKey: "aiAssist.placeholder.appearance",
-		exampleKeys: [
-			WHAT_CAN_YOU_CONFIGURE,
-			"aiAssist.examples.appearance.dark",
-			"aiAssist.examples.appearance.theme",
-			"aiAssist.examples.appearance.cursor",
-		],
+		exampleKeys: [WHAT_CAN_YOU_CONFIGURE, "aiAssist.examples.appearance.dark", "aiAssist.examples.appearance.theme"],
 	},
 	{
 		tabId: "pet",
@@ -139,7 +134,7 @@ const CATALOG = [
 			WHAT_CAN_YOU_CONFIGURE,
 			"aiAssist.examples.pet.show",
 			"aiAssist.examples.pet.size",
-			"aiAssist.examples.pet.bubble",
+			"aiAssist.examples.pet.onTop",
 		],
 	},
 	{
@@ -159,12 +154,7 @@ const CATALOG = [
 		contextLabelKey: "aiAssist.context.shortcuts",
 		defaultIntentKey: "aiAssist.defaultIntent.shortcuts",
 		placeholderKey: "aiAssist.placeholder.shortcuts",
-		exampleKeys: [
-			WHAT_CAN_YOU_CONFIGURE,
-			"aiAssist.examples.shortcuts.list",
-			"aiAssist.examples.shortcuts.quickpanel",
-			"aiAssist.examples.shortcuts.reset",
-		],
+		exampleKeys: [WHAT_CAN_YOU_CONFIGURE, "aiAssist.examples.shortcuts.list", "aiAssist.examples.shortcuts.reset"],
 	},
 	{
 		tabId: "agent",

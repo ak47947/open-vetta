@@ -1,5 +1,5 @@
 import { ipcMain } from "electron";
-import type { PetBubbleStyleAsset, PetDecoration } from "../../preload/api-types/pet.js";
+import type { PetActionVideo, PetDecoration } from "../../preload/api-types/pet.js";
 import { isPetActionId, type PetConfig } from "../../shared/pet-config.js";
 import {
 	PET_BEGIN_WINDOW_MOVE_CHANNEL,
@@ -14,7 +14,7 @@ import {
 	PET_SET_VIDEO_BASE_SIZE_CHANNEL,
 	PET_SET_VIDEO_HITBOX_CHANNEL,
 	PET_SET_WINDOW_SIZE_CHANNEL,
-	type PetContentBounds,
+	type PetContentSize,
 	type PetResizeCorner,
 	type PetVideoHitbox,
 } from "../../shared/pet-ipc.js";
@@ -24,7 +24,7 @@ import {
 	endDesktopPetWindowMove,
 	endDesktopPetWindowResize,
 	hideDesktopPet,
-	listPetBubbleStyleAssets,
+	listDesktopPetActionVideos,
 	listPetDecorations,
 	moveDesktopPetWindow,
 	readCurrentPetConfig,
@@ -47,7 +47,7 @@ const CHANNELS = {
 	HIDE: "vetta:pet:hide",
 	SET_ACTION: "vetta:pet:set-action",
 	GET_DECORATIONS: "vetta:pet:get-decorations",
-	GET_BUBBLE_STYLE_ASSETS: "vetta:pet:get-bubble-style-assets",
+	GET_ACTION_VIDEOS: "vetta:pet:get-action-videos",
 } as const;
 
 const PET_RESIZE_CORNERS = new Set<PetResizeCorner>(["top-left", "top-right", "bottom-left", "bottom-right"]);
@@ -71,25 +71,15 @@ function isPetVideoHitbox(value: unknown): value is PetVideoHitbox {
 	);
 }
 
-function isFiniteRect(value: unknown): value is { x: number; y: number; width: number; height: number } {
-	if (typeof value !== "object" || value === null) return false;
-	const rect = value as Record<string, unknown>;
-	return (
-		typeof rect.x === "number" &&
-		Number.isFinite(rect.x) &&
-		typeof rect.y === "number" &&
-		Number.isFinite(rect.y) &&
-		typeof rect.width === "number" &&
-		Number.isFinite(rect.width) &&
-		typeof rect.height === "number" &&
-		Number.isFinite(rect.height)
-	);
-}
-
-function isPetContentBounds(value: unknown): value is PetContentBounds {
+function isPetContentSize(value: unknown): value is PetContentSize {
 	if (typeof value !== "object" || value === null) return false;
 	const content = value as Record<string, unknown>;
-	return isFiniteRect(content.bounds) && isFiniteRect(content.anchor);
+	return (
+		typeof content.width === "number" &&
+		Number.isFinite(content.width) &&
+		typeof content.height === "number" &&
+		Number.isFinite(content.height)
+	);
 }
 
 export function registerPetIpc(): () => void {
@@ -121,8 +111,8 @@ export function registerPetIpc(): () => void {
 		return listPetDecorations();
 	});
 
-	ipcMain.handle(CHANNELS.GET_BUBBLE_STYLE_ASSETS, (): PetBubbleStyleAsset[] => {
-		return listPetBubbleStyleAssets();
+	ipcMain.handle(CHANNELS.GET_ACTION_VIDEOS, (): PetActionVideo[] => {
+		return listDesktopPetActionVideos();
 	});
 
 	ipcMain.handle(PET_RESIZE_BY_WHEEL_CHANNEL, async (_event, deltaY: unknown): Promise<void> => {
@@ -161,7 +151,7 @@ export function registerPetIpc(): () => void {
 	});
 
 	ipcMain.handle(PET_SET_CONTENT_SIZE_CHANNEL, (_event, content: unknown): void => {
-		if (typeof content !== "number" && !isPetContentBounds(content)) return;
+		if (typeof content !== "number" && !isPetContentSize(content)) return;
 		setDesktopPetContentSize(content);
 	});
 
@@ -194,7 +184,7 @@ export function registerPetIpc(): () => void {
 		ipcMain.removeHandler(CHANNELS.HIDE);
 		ipcMain.removeHandler(CHANNELS.SET_ACTION);
 		ipcMain.removeHandler(CHANNELS.GET_DECORATIONS);
-		ipcMain.removeHandler(CHANNELS.GET_BUBBLE_STYLE_ASSETS);
+		ipcMain.removeHandler(CHANNELS.GET_ACTION_VIDEOS);
 		ipcMain.removeHandler(PET_RESIZE_BY_WHEEL_CHANNEL);
 		ipcMain.removeHandler(PET_RESIZE_VIDEO_BY_WHEEL_CHANNEL);
 		ipcMain.removeHandler(PET_BEGIN_WINDOW_MOVE_CHANNEL);

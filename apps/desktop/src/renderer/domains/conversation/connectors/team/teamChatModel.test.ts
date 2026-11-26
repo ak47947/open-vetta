@@ -6,10 +6,12 @@ import type { TeamDefinition, TeamSessionDocument } from "@vetta/agent-team";
 import { createAssistantMessage } from "@vetta/ai";
 import { describe, expect, it } from "vitest";
 import {
+	adoptTeamSessionSnapshot,
 	placeTeamErrorInTimeline,
 	projectTeamConversationTimeline,
 	reduceTeamStreamState,
 	resolveTeamMembers,
+	reuseUnchangedTimelineItems,
 	stripAttachmentContext,
 	type TeamMemberViewModel,
 	updateScopedTeamDraft,
@@ -172,6 +174,83 @@ describe("resolveTeamMembers", () => {
 		const [resolved] = resolveTeamMembers(undefined, team, [], {}, (_profileId, fallbackHandle) => fallbackHandle);
 
 		expect(resolved?.avatar).toMatch(/agent-team-avatars\/[a-z]+\.webp$/u);
+	});
+});
+
+describe("adoptTeamSessionSnapshot", () => {
+	const current = snapshot({
+		session: { ...session, revision: 3, modelSettings: { modelKey: "openai/gpt-5" } },
+		conversationRevision: 2,
+	});
+
+	it("takes newer conversation entries without moving the session document back", () => {
+		const incoming = snapshot({
+			session: { ...session, revision: 2, modelSettings: { modelKey: "agy/opus" } },
+			conversationRevision: 4,
+		});
+
+		expect(adoptTeamSessionSnapshot(current, incoming)).toEqual({ ...incoming, session: current.session });
+	});
+
+	it("rejects a snapshot that trails on both revisions", () => {
+		const incoming = snapshot({ session: { ...session, revision: 2 }, conversationRevision: 1 });
+
+		expect(adoptTeamSessionSnapshot(current, incoming)).toBeUndefined();
+	});
+
+	it("adopts a newer session document as a whole", () => {
+		const incoming = snapshot({ session: { ...session, revision: 4 }, conversationRevision: 1 });
+
+		expect(adoptTeamSessionSnapshot(current, incoming)).toBe(incoming);
+		expect(adoptTeamSessionSnapshot(undefined, incoming)).toBe(incoming);
+	});
+});
+
+describe("team timeline identity while streaming", () => {
+	const labels = { delegation: (from: string, to: string) => `${from} -> ${to}`, unknownMember: "Unknown" };
+	const persisted = snapshot({
+		messages: [
+			userMessage("prompt-1", "request-1", "First", 1),
+			agentMessage("result-1", "request-1", "leader", "First answer", 2),
+		],
+	});
+
+	it("keeps persisted rows as the same objects while a new reply streams", () => {
+		const project = (streams: Parameters<typeof projectTeamConversationTimeline>[0]["streams"]) =>
+			projectTeamConversationTimeline({
+				snapshot: persisted,
+				pending: undefined,
+				streams,
+				members: [member],
+				labels,
+			});
+		const first = reduceTeamStreamState({}, streamEvent("live", 1, "Sec", "leader", "request-2"));
+		const second = reduceTeamStreamState(first, streamEvent("live", 2, "ond", "leader", "request-2"));
+
+		const before = project(first);
+		const after = reuseUnchangedTimelineItems(before, project(second));
+
+		expect(after).not.toBe(before);
+		const persistedIds = new Set(["prompt-1", "result-1"]);
+		const persistedRows = after.filter((entry) => persistedIds.has(entry.id));
+		expect(persistedRows).toHaveLength(2);
+		for (const item of persistedRows) {
+			expect(item).toBe(before.find((entry) => entry.id === item.id));
+		}
+		const live = after.find((item) => item.kind === "agent" && item.phase === "streaming");
+		expect(live).not.toBe(before.find((item) => item.id === live?.id));
+	});
+
+	it("returns the previous array when nothing changed", () => {
+		const items = projectTeamConversationTimeline({
+			snapshot: persisted,
+			pending: undefined,
+			streams: {},
+			members: [member],
+			labels,
+		});
+		const again = items.map((item) => ({ ...item }));
+		expect(reuseUnchangedTimelineItems(items, again)).toBe(items);
 	});
 });
 

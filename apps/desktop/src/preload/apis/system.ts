@@ -22,11 +22,9 @@ export function createSystemApi(
 	| "media"
 	| "runtimes"
 	| "settings"
-	| "subscription"
 	| "shell"
 	| "clipboard"
 	| "window"
-	| "auth"
 	| "updater"
 	| "tray"
 	| "debug"
@@ -72,7 +70,6 @@ export function createSystemApi(
 						requestId?: unknown;
 						mode?: unknown;
 						themeId?: unknown;
-						cursorStyle?: unknown;
 					};
 					if (typeof request.requestId !== "string") return;
 					const changeRequest: DesktopThemeChangeRequest = {};
@@ -81,9 +78,6 @@ export function createSystemApi(
 					}
 					if (typeof request.themeId === "string") {
 						changeRequest.themeId = request.themeId;
-					}
-					if (request.cursorStyle === "default" || request.cursorStyle === "stoat") {
-						changeRequest.cursorStyle = request.cursorStyle;
 					}
 					void Promise.resolve(handler(changeRequest)).then(
 						(state) => ipc.send("vetta:theme:change-response", { requestId: request.requestId, state }),
@@ -157,7 +151,12 @@ export function createSystemApi(
 			createEntry: (parentDirectory, name, kind) => ipc.invoke("vetta:fs:create-entry", parentDirectory, name, kind),
 			createDirectory: (dirPath) => ipc.invoke("vetta:fs:create-directory", dirPath),
 			listSubDirs: (dirPath) => ipc.invoke("vetta:fs:list-sub-dirs", dirPath),
-			listFilesRecursive: (rootPath) => ipc.invoke("vetta:fs:list-files-recursive", rootPath),
+			listFilesRecursive: (rootPath, options) =>
+				ipc.invoke(
+					"vetta:fs:list-files-recursive",
+					rootPath,
+					options?.includeDirectories ? { includeDirectories: true } : undefined,
+				),
 			watchDir: (dirPath) => ipc.invoke("vetta:fs:watch-dir", dirPath),
 			unwatchDir: (dirPath) => ipc.invoke("vetta:fs:unwatch-dir", dirPath),
 			onDirChanged: (handler) => onIpcEvent(ipc, "vetta:fs:dir-changed", handler),
@@ -165,8 +164,6 @@ export function createSystemApi(
 		},
 		skills: {
 			list: (cwd) => ipc.invoke("vetta:skills:list", cwd),
-			installFromMarket: (name, archiveBuffer, type, meta) =>
-				ipc.invoke("vetta:skills:install-from-market", name, archiveBuffer, type, meta),
 			installFromMarketSlug: (type, slug) => ipc.invoke("vetta:skills:install-from-market-slug", type, slug),
 			importCustom: (archiveBuffer) => ipc.invoke("vetta:skills:import-custom", archiveBuffer),
 			uninstall: (name, type) => ipc.invoke("vetta:skills:uninstall", name, type),
@@ -206,8 +203,8 @@ export function createSystemApi(
 			copyApiKey: (providerId) => ipc.invoke("vetta:models:copy-api-key", providerId),
 			fetchRemote: () => ipc.invoke("vetta:models:fetch-remote"),
 			listPresets: () => ipc.invoke("vetta:models:list-presets"),
-			refreshPresetModels: (providerId, apiKey) =>
-				ipc.invoke("vetta:models:refresh-preset-models", providerId, apiKey),
+			refreshPresetModels: (providerId, apiKey, baseUrl) =>
+				ipc.invoke("vetta:models:refresh-preset-models", providerId, apiKey, baseUrl),
 			refreshPresetCatalog: () => ipc.invoke("vetta:models:refresh-preset-catalog"),
 			onPresetsUpdated: (handler) => onIpcVoidEvent(ipc, "vetta:models:presets-updated", handler),
 			probe: (ref) => ipc.invoke("vetta:models:probe", ref),
@@ -230,6 +227,11 @@ export function createSystemApi(
 		},
 		media: {
 			listProviders: () => ipc.invoke("vetta:media:list-providers"),
+			customImageProviders: {
+				list: () => ipc.invoke("vetta:media:custom-image-providers:list"),
+				save: (input) => ipc.invoke("vetta:media:custom-image-providers:save", input),
+				remove: (id) => ipc.invoke("vetta:media:custom-image-providers:remove", id),
+			},
 			getAudioMetadata: (filePath) => ipc.invoke("vetta:media:audio-metadata", filePath),
 		},
 		runtimes: {
@@ -239,17 +241,8 @@ export function createSystemApi(
 			installGit: () => ipc.invoke("vetta:runtimes:install-git"),
 		},
 		settings: {
-			getServerUrl: () => ipc.invoke("vetta:settings:get-server-url"),
-			getSiteUrl: () => ipc.invoke("vetta:settings:get-site-url"),
-			getServerToken: () => ipc.invoke("vetta:settings:get-server-token"),
-			setServerToken: (token) => ipc.invoke("vetta:settings:set-server-token", token),
-			getServerRefreshToken: () => ipc.invoke("vetta:settings:get-server-refresh-token"),
-			setServerRefreshToken: (token) => ipc.invoke("vetta:settings:set-server-refresh-token", token),
 			getModelTransport: () => ipc.invoke("vetta:settings:get-model-transport"),
 			setModelTransport: (transport) => ipc.invoke("vetta:settings:set-model-transport", transport),
-		},
-		subscription: {
-			getStatus: () => ipc.invoke("vetta:subscription:status"),
 		},
 		shell: {
 			showInFolder: (fullPath) => ipc.invoke("vetta:shell:show-in-folder", fullPath),
@@ -271,21 +264,12 @@ export function createSystemApi(
 			isAlwaysOnTop: () => ipc.invoke("vetta:window:is-always-on-top"),
 			captureRegion: (rect, defaultFileName) => ipc.invoke("vetta:window:capture-region", rect, defaultFileName),
 		},
-		auth: {
-			openExternal: (url) => ipc.invoke("vetta:shell:open-external", url),
-			startOAuth: () => ipc.invoke("vetta:auth:start-oauth"),
-			reopenOAuth: () => ipc.invoke("vetta:auth:reopen-oauth"),
-			refreshToken: () => ipc.invoke("vetta:auth:refresh-token"),
-			onOAuthCallback: (handler) => onIpcEvent(ipc, "vetta:auth:oauth-callback", handler),
-			onOAuthRejected: (handler) => onIpcVoidEvent(ipc, "vetta:auth:oauth-rejected", handler),
-			onUnauthorized: (handler) => onIpcVoidEvent(ipc, "vetta:auth:unauthorized", handler),
-			onTokenRefreshed: (handler) => onIpcEvent(ipc, "vetta:auth:token-refreshed", handler),
-		},
 		updater: {
 			check: () => ipc.invoke("vetta:updater:check"),
 			sync: () => ipc.invoke("vetta:updater:sync"),
 			getState: () => ipc.invoke("vetta:updater:get-state"),
 			getCurrentVersion: () => ipc.invoke("vetta:updater:get-current-version"),
+			getCurrentReleaseNote: () => ipc.invoke("vetta:updater:get-current-release-note"),
 			download: () => ipc.invoke("vetta:updater:download"),
 			install: () => ipc.invoke("vetta:updater:install"),
 			dismiss: () => ipc.invoke("vetta:updater:dismiss"),

@@ -365,6 +365,17 @@ interface PluginActivityTabContribution {
   retention?: "active-only" | "warm" | "pinned"; // 缺省 warm
   /** @deprecated true=pinned，false=active-only */
   keepAliveWhenAvailable?: boolean;
+  /** 按当前面板工作空间决定这一帧；null = 本帧不进入候选（见下「useMeta」） */
+  useMeta?: (scope: { cwd: string | null }) => PluginActivityTabMeta | null;
+}
+
+interface PluginActivityTabMeta {
+  label?: string;
+  icon?: ReactNode;
+  badge?: number;
+  /** true = 固定上栏且不可移除，忽略上栏记录与 initiallyVisible */
+  pinned?: boolean;
+}
 }
 ```
 
@@ -390,6 +401,44 @@ function StatsPanel() {
 }
 ```
 
+### useMeta（按工作空间决定这一帧）
+
+```ts
+useMeta?: (scope: { cwd: string | null }) => { label?; icon?; badge?; pinned?: boolean } | null;
+```
+
+注册时声明 `useMeta`，标签卡的显隐就不再靠「用户上栏记录 + `setActivityTabVisible`」，而是**每帧按当前面板的工作空间重新算**：
+
+- 返回 `null`：本帧不进入候选——不上栏，也不在「+」可添加池里。适合「这块目录根本不是这个工具能处理的」的情况。
+- 返回 `{ pinned: true }`：**固定上栏且不可移除**。忽略上栏/下栏记录与 `initiallyVisible`，用户不能再用减号把它挤出去。「只要工作空间里有这个东西就必须看得到」的面板用这个（如项目根存在 `.git` 的 Git 面板）。
+- 返回 `{}` / 只带 label：行为回到注册时声明——`initiallyVisible` 与用户可移除的上栏记录决定去留。
+
+它是一个 **React hook**，宿主在**每个挂载的活动面板**上调用它：会话页、新会话页、项目详情页都能拿到各自的工作空间 cwd（新会话页是所选项目根，项目详情页是项目根）。这比只靠 `ctx.conversation.on("conversation-changed")` 可靠：后者在没有会话的页面上永远不会触发，插件也拿不到那些页面的 cwd。
+
+约束：
+
+- 渲染期必须是纯计算。探测一类的异步工作放进 `useEffect`，结果写回自己的缓存 store，并用 `useSyncExternalStore`（或等价订阅）让宿主重算。
+- 首帧还没有结论时返回 `null`，不要先按错误的判断占位。
+- 缓存要能被作废：仓库状态是变的（`git init`、agent 自己跑的命令）。宿主不会替插件重算——自行在 `turn-end` 与自己的写操作后作废缓存，否则标签卡会一直沿用旧结论。
+- 抛错等同于返回 `null`，只影响这一项。
+
+```tsx
+// git：仓库目录里固定在栏上，其它目录退回「+」池（初始化仓库仍从那里进）。
+ctx.ui.registerActivityTab({
+  id: "changes",
+  label: "%tab.label%",
+  component: GitPanel,
+  scope_use: ["project", "batch", "automation"],
+  initiallyVisible: false,
+  useMeta: ({ cwd }) => {
+    if (!cwd) return null;
+    const probe = useCachedGitProbe(cwd); // 自己的缓存 + effect 里的异步探测
+    if (probe === null) return null;      // 还没结论
+    return { pinned: probe !== "not-repo" };
+  },
+});
+```
+
 ### openActivityTab
 
 ```ts
@@ -412,10 +461,16 @@ ctx.ui.openActivityTab("preview", { width: "max", cwd: session.cwd });
 ctx.ui.setActivityTabVisible(tabId, visible: boolean, options?: { cwd?: string });
 ```
 
-只把 tab 放进/移出目标会话的标签栏，**不激活、不展开面板**——「它现在该不该在栏里」，而不是「用户此刻要看它」。`cwd` 的缺省与显式目标语义同 `openActivityTab`。这是插件表达自己出现条件的地方：
+只把 tab 放进/移出目标会话的标签栏，**不激活、不展开面板**——「它现在该不该在栏里」，而不是「用户此刻要看它」。`cwd` 的缺省与显式目标语义同 `openActivityTab`。它是插件按自己的运行状态主动改变上栏记录的地方（条件取决于工作空间本身时用 `useMeta`）：
 
 ```ts
-// git：只在 git 工作区里上栏。conversation.on 订阅后会立刻回放一次
+// 硬隔离的工作台：只在用户开启了某个功能时才上栏。
+// 注：「看目录里有没有 .git」这类依赖工作空间的条件不要写在这里，用 useMeta——
+// 新会话页、项目详情页没有会话事件，上面的 conversation.on 在那些页面上不会触发。
+ctx.conversation.on((event) => {
+  if (event.type !== "conversation-changed") return;
+  ctx.ui.setActivityTabVisible("history", latestTurnHasGeneratedImages);
+});
 // conversation-changed，所以不用等下次切会话。
 ctx.conversation.on((event) => {
   if (event.type !== "conversation-changed") return;
@@ -436,6 +491,8 @@ ctx.ui.registerInputAction({
 ```
 
 上栏记录按 cwd 持久化，所以**只需在条件变化时调用**；用户之后用减号手动隐藏的结果不会被重复调用覆盖。当前没有活动会话时是 no-op（无处记录），插件应在会话就绪后重新判定。异步判定要注意丢弃过期结果：写入落在**调用时**的活动会话上，探测期间切走了就别再写。
+
+它只能影响**有会话在场的**面板：写入前宿主把会话 cwd 翻成当前挂载的工作空间键，新会话页/项目详情页没有会话可寻址。这类页面上的显隐用 `useMeta`。
 
 ## 会话底部面板 registerBottomPanel
 
@@ -675,6 +732,138 @@ interface PluginNewSessionContext {
 ### 团队会话
 
 团队会话与单智能体会话一样会把**工作区**与**轮次开始**报给插件，因此本区里挂的东西（附件、插入的文本）在团队会话里同样有去处。
+
+## 会话页顶栏动作 registerHeaderAction
+
+在页面顶栏右侧的**宿主统一按钮组**里加一格，例如「用外部应用打开」，或把分支 / 待提交数这类状态摊在顶栏上。
+
+- 权限：`ui.slot.header-action`（缺权限 = warn + noop）
+- 需要 Plugin API `^2.9.0`；`label` / `tone` / `disabledReason` / `promoteWhenActive`、菜单项类型、
+  气泡尺寸与 `dialog` 容器、`surfaces`、`pin` 需要 `^2.11.0`
+- 出现在会话页与新会话页（由 `surfaces` 决定）
+
+### 它是声明式的：你只决定「是什么」，不决定「长什么样」
+
+顶栏右侧是**一个**按钮组，内置按钮（导出 / 置顶 / 终端 / 底部面板）和所有插件动作排在同一组里。外观、间距、弹层皮肤全部由宿主渲染，插件**不能**传 `className` / `style`，也不能替换按钮本身，更不能在顶栏里画自己的控件。你能给的只有：
+
+| 字段 | 说明 |
+| --- | --- |
+| `title`（必填） | 悬浮提示与无障碍名称。**默认按钮上没有文字**，用户靠图标 + 这条提示认出它；最长 40 字，超出截断 |
+| `icon`（必填） | 图标节点。宿主放进 16px 固定方框、忽略指针事件，建议用 iconify：`<span className="icon-[solar--folder-linear]" />` |
+| `label` | 图标右侧的文字（最长 24 字）。给「状态本身就是文字」的动作用，比如分支名、落后几个提交。只在顶栏上、且顶栏不超过 4 格、页头不拥挤时显示；被收纳或挤窄时自动退回纯图标 |
+| `badge` | 数字（≥ 1，超过 99 显示 `99+`）或 `true`（红点）；其它值被忽略 |
+| `tone` | `neutral`（默认）/ `info` / `success` / `warning` / `danger`，作用于角标与图标颜色。**别把所有数字都染成红色**：红色留给真正需要人处理的状态（冲突、失败） |
+| `active` / `disabled` | 选中态 / 禁用态 |
+| `disabledReason` | 禁用原因。禁用时取代 `title` 显示，用户才知道为什么点不了 |
+| `promoteWhenActive` | 选中时即使被收纳，也在活动面板开关左侧露出来（适合「正在录制」这类必须可见的状态） |
+| `onClick` / `menuItems` / `popover` | **三选一**的点击行为，见下 |
+
+三种点击行为按 `menuItems` > `popover` > `onClick` 取第一个存在的；一个都没有，这个动作不显示并在控制台打一条 warn。
+
+- `menuItems`：下拉菜单，最多 20 项，`{ id, kind?, label, icon?, onSelect?, children?, checked?, disabled?, disabledReason?, destructive?, separatorBefore? }`，`id` 在菜单内唯一，非法项被丢弃；
+- `popover`：一个 React 组件（props `{ close }`），或 `{ component, size?: "sm" | "md" | "lg", host?: "popover" | "dialog", title? }`。**这是唯一允许自定义内容的地方**。气泡的背景、圆角、投影由宿主固定；`size` 决定宽度档位（约 16 / 24 / 32rem），`host: "dialog"` 换成宿主居中对话框（内容有输入框、长列表时更合适）；
+- `onClick`：点击直接执行。
+
+#### 菜单项类型：让「列表就是状态」
+
+`kind` 省略即普通命令项。给列表、开关、加载中这些场景用，比把状态写进文案更清楚：
+
+| `kind` | 行为 |
+| --- | --- |
+| `item` | 普通命令项，必须给 `onSelect` |
+| `checkbox` / `radio` | 带勾选标记（`checked`），点击后**菜单不关**（勾选变化就是反馈）；必须给 `onSelect` |
+| `label` | 分组标题，不可点 |
+| `loading` / `empty` | 占位行，自动禁用（「正在加载」「没有本地分支」） |
+| `submenu` | 展开 `children`；**只支持一层**，第二层会被丢弃 |
+
+### 注册：`useAction` 是一个 hook
+
+```ts
+interface PluginHeaderActionContribution {
+  id: string;        // 本插件内唯一，≤ 64 字符；用户布局按 `${pluginId}:${id}` 记忆，别随意改名
+  order?: number;    // 只决定「用户没调整过时」的初始位置，小的靠左
+  surfaces?: readonly ("conversation" | "new-session")[]; // 默认 ["conversation"]
+  pin?: "normal" | "prefer"; // prefer = 用户没调整过时优先占顶栏一格；仍是用户可改的默认值
+  useAction: (context: { surface; cwd }) => PluginHeaderActionState | null; // null = 此刻不适用
+}
+```
+
+宿主在页面顶栏挂载期间一直调用 `useAction`，所以里面可以用任意 hook（`useTranslation()`、你自己的 store），数据变化就自然重新声明。入参 `context` 给出当前页面（`surface`）与工作目录（`cwd`，没有项目时为 `null`）：
+
+```tsx
+import { useTranslation } from "@vetta-org/plugin-sdk";
+
+function useOpenInApp({ cwd }: { cwd: string | null }) {
+  const { t } = useTranslation();
+  if (!cwd) return null; // 没有项目目录：不显示
+  return {
+    title: t("action.title"),
+    icon: <span className="icon-[solar--square-arrow-right-up-linear]" />,
+    menuItems: [
+      { id: "finder", label: "Finder", onSelect: () => openIn("Finder", cwd) },
+      { id: "vscode", label: "VS Code", onSelect: () => openIn("Visual Studio Code", cwd) },
+    ],
+  };
+}
+
+// activate 里注册
+ctx.ui.registerHeaderAction({ id: "open-in-app", order: 100, useAction: useOpenInApp });
+```
+
+把状态摊在按钮上的例子（分支名 + 待提交数 + 角标语义色，点开是快捷操作）：
+
+```tsx
+function useStatus({ cwd }) {
+  const status = useMyRepoStatus(cwd); // 你自己的 store，渲染期只读缓存
+  if (!cwd || !status) return null;
+  return {
+    title: `${status.branch} · ${status.files} 个未提交变更`,
+    label: status.branch ?? "分离 HEAD",
+    icon: <span className="icon-[mdi--source-branch]" />,
+    badge: status.conflict > 0 ? status.conflict : status.files || undefined,
+    tone: status.conflict > 0 ? "danger" : status.behind > 0 ? "info" : undefined,
+    popover: { component: QuickActions, size: "md", title: "Git" },
+  };
+}
+```
+
+### 工程限制一览
+
+| 项 | 限制 |
+| --- | --- |
+| 贡献 id | 本插件内唯一，≤ 64 字符，重复注册抛错 |
+| `title` / `label` | 必填 40 字 / 可选 24 字，超出截断 |
+| `icon` | 必填，16px 固定方框，忽略指针事件 |
+| `menuItems` | ≤ 20 项，id 不重复，`label` ≤ 40 字，子菜单只一层 |
+| `badge` | 数字 ≥ 1 或 `true` |
+| 点击行为 | `menuItems` / `popover` / `onClick` 三选一 |
+| 样式 | 不可自定义（仅 `popover` 组件内部自由） |
+| 顶栏名额 | 7 格，内置与插件共用 |
+| 出现位置 | 会话页与新会话页；两页的布局分别保存 |
+
+### `useAction` 的约束
+
+违反时只会让**你这一项**消失，不会影响别的动作：
+
+- 渲染期必须是纯计算：不要在里面发请求、起定时器，这类副作用放 `useEffect`（状态读取请走「缓存 + 订阅」，别每次渲染都跑 `git status`）；
+- 抛错由宿主错误边界吞掉，该项消失并在控制台记录；
+- 每次渲染可以返回新对象，宿主不依赖引用相等，也不要求你 `useMemo`；
+- `onClick` / `onSelect` 抛错或返回的 Promise 被拒绝，宿主只记日志；
+- 声明不合法（缺 `title` / `icon`、没有任何点击行为）：该项不显示，控制台 warn 一次。
+
+### 宿主怎么摆放：你不能假定自己在顶栏上
+
+- 顶栏最多显示 **7 格**（不含最右侧固定的「活动面板」开关），**内置与插件共用**这 7 个名额；
+- 超出的、以及用户主动收起的动作进入**收纳**：鼠标悬浮在按钮组上时，组下方出现一条小白条，点开是收纳托盘。托盘里只有图标，点一下直接使用；
+- 打开托盘即进入编辑状态：按钮组里没被占用的席位显示为虚线方框；把托盘里的图标拖进按钮组就上栏，把按钮组里的按钮拖进托盘就收纳，组内也能拖动换序。这份布局按 `${pluginId}:${id}` 记在本机、且按页面分开存；
+- **默认布局**：会话页在用户从没调整过时只显示「终端」「底部面板」「导出」；新会话页只有「置顶」。**其余动作（包括你的插件）默认都在收纳里**，需要用户自己拖到顶栏。`pin: "prefer"` 是唯一的例外：它让「状态就该看得见」的动作在默认布局里占一格，但仍受 7 格上限与用户后来的调整约束；
+- 用户调整过之后以他存下来的布局为准。此后新装插件的动作：顶栏还有空位就按 `order` 排进去，没有空位进收纳，**不会挤走用户已有的布局**；
+- 被收纳的动作带角标时，宿主会把小白条变红，角标不会被藏起来；
+- 被收纳的菜单 / 气泡动作点击后在托盘旁弹出，内容与在顶栏时一致。
+
+所以：不要依赖自己在顶栏上的位置，不要依赖相邻的是谁，也不要在文案里写「左边的按钮」。
+
+官方示例：`packages/plugins/presets/open-in-app`（最小动作）与 `packages/plugins/presets/git`（状态 + 快捷操作气泡）。
 
 ## 工具行内渲染 registerToolCallSlot
 

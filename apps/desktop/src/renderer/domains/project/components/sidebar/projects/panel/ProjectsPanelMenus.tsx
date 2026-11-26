@@ -1,5 +1,6 @@
 import { ProjectsPanelMenusView } from "@vetta-org/theme-ui/project/ProjectsPanelMenusView";
 import { ConversationTagEditorDialog } from "../../../ConversationTagEditorDialog";
+import { ManageSessionsSplash } from "../../../ManageSessionsSplash";
 import { useProjectsPanelMenusModel } from "../../../../hooks/useProjectsPanelMenusModel";
 import { ProjectContextMenu } from "../../../ProjectContextMenu";
 import { SessionContextMenu } from "../../../SessionContextMenu";
@@ -14,12 +15,18 @@ export function ProjectsPanelMenus({ model }: ProjectsPanelMenusProps): JSX.Elem
 
 	return (
 		<ProjectsPanelMenusView
-			dialogs={<ConversationTagEditorDialog />}
+			dialogs={
+				<>
+					<ConversationTagEditorDialog />
+					<ManageSessionsSplash model={model} />
+				</>
+			}
 			sessionMenu={
 				menus.contextMenu ? (
 					<SessionContextMenu
 						allowMutations={menus.contextMenu.allowMutations}
 						canTag={menus.contextMenu.canTag}
+						independent={menus.contextMenu.independent}
 						x={menus.contextMenu.x}
 						y={menus.contextMenu.y}
 						session={menus.contextMenu.session}
@@ -37,6 +44,7 @@ export function ProjectsPanelMenus({ model }: ProjectsPanelMenusProps): JSX.Elem
 						onClose={menus.actions.closeProjectMenu}
 						onArchive={menus.actions.archiveProject}
 						onRemove={menus.actions.removeProject}
+						onManageSessions={menus.actions.manageSessions}
 						defaultScope={menus.defaultScope}
 						onClearConversation={menus.actions.clearConversation}
 						onClearClaw={menus.actions.clearClaw}

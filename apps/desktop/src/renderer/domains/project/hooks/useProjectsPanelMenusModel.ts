@@ -1,8 +1,9 @@
-import type { SessionContextMenuSession } from "@shared/store/atoms";
+import type { Project, SessionContextMenuSession } from "@shared/store/atoms";
 import {
 	automationSessionLinksAtom,
 	confirmDialogAtom,
 	conversationFilterSource,
+	manageSessionsProjectAtom,
 	projectContextMenuAtom,
 	runningSessionPathsAtom,
 	sessionContextMenuAtom,
@@ -17,16 +18,17 @@ export function useProjectsPanelMenusModel(model: ProjectsPanelModel) {
 	const [projectMenu, setProjectMenu] = useAtom(projectContextMenuAtom);
 	const runningSessionPaths = useAtomValue(runningSessionPathsAtom);
 	const setConfirm = useSetAtom(confirmDialogAtom);
+	const setManageSessionsProject = useSetAtom(manageSessionsProjectAtom);
 	const automationLinks = useAtomValue(automationSessionLinksAtom);
 	const { t } = useTranslation("project");
 
 	const clearConversationDisabled =
 		projectMenu?.project.isDefault === true &&
-		model.projectSessions(projectMenu.project.cwd).some((session) => runningSessionPaths.has(session.path));
+		model.defaultSessions.some((session) => runningSessionPaths.has(session.path));
 
 	const clearClawDisabled =
 		projectMenu?.project.isDefault === true &&
-		model.projectSessions(model.imCwd).some((session) => runningSessionPaths.has(session.path));
+		model.defaultSessions.some((session) => runningSessionPaths.has(session.path));
 	// 项目右键菜单只区分「清空会话 / 清空 Claw」，标签档按其所属来源（对话）处理。
 	const defaultScope =
 		projectMenu?.project.isDefault === true ? conversationFilterSource(model.defaultConversationFilter) : undefined;
@@ -68,6 +70,10 @@ export function useProjectsPanelMenusModel(model: ProjectsPanelModel) {
 			removeProject: (cwd: string) => {
 				setProjectMenu(null);
 				model.actions.removeProject(cwd);
+			},
+			manageSessions: (project: Project) => {
+				setProjectMenu(null);
+				setManageSessionsProject(project);
 			},
 			clearConversation: (cwd: string) => {
 				setProjectMenu(null);

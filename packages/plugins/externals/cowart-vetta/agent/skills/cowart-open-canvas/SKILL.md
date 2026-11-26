@@ -1,13 +1,13 @@
 ---
 name: cowart-open-canvas
-description: Open the Cowart infinite canvas (tldraw) in Vetta Desktop. Use when the user asks to open, launch, view, or work in the Cowart canvas or wants an infinite canvas for visual planning/image work.
+description: Open the Cowart infinite canvas (tldraw) in Atrix Desktop. Use when the user asks to open, launch, view, or work in the Cowart canvas or wants an infinite canvas for visual planning/image work.
 ---
 
-# Cowart Open Canvas (Vetta 1:1)
+# Cowart Open Canvas (Atrix 1:1)
 
 ## Host mapping
 
-| Codex | Vetta |
+| Codex | Atrix |
 |-------|--------|
 | MCP App widget (`ui://widget/...`) | Activity panel tab with full tldraw `App` |
 | `window.cowartMcp` bridge | Plugin installs the same bridge via `ctx.fs` + `conversation.sendPrompt` |

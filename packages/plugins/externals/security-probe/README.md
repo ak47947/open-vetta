@@ -45,7 +45,7 @@ packages/plugins/externals/security-probe/release/security-probe-0.1.0.vettapkg
 
 ```js
 const file = await window.showOpenFilePicker({
-  types: [{ description: "Vetta plugin", accept: { "application/vnd.vetta.plugin+zip": [".vettapkg"] } }],
+  types: [{ description: "Atrix plugin", accept: { "application/vnd.vetta.plugin+zip": [".vettapkg"] } }],
 });
 const buffer = await (await file[0].getFile()).arrayBuffer();
 await window.vetta.plugins.installFromArchive(buffer, {

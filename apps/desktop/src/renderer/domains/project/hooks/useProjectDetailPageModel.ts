@@ -1,11 +1,14 @@
+import { useScheduledTasks } from "@domains/scheduler/hooks/useScheduledTasks";
+import { resolveConversationScenario } from "@shared/lib/conversation-scenario";
 import { isMac } from "@shared/lib/platform";
 import { pathBasename } from "@shared/lib/utils";
 import { useShortcutScope } from "@shared/shortcuts";
 import {
 	activityPanelOpenAtom,
+	automationSessionLinksAtom,
 	batchProjectsAtom,
 	confirmDialogAtom,
-	isPersonalModeAtom,
+	defaultConversationCwdAtom,
 	pageHeaderTitleHiddenAtom,
 	pinnedSessionPathsAtom,
 	projectsAtom,
@@ -14,14 +17,17 @@ import {
 	runningTaskIdsAtom,
 	type SessionInfo,
 	scheduledTasksAtom,
+	selectedTaskIdAtom,
 	sessionDisplayLabel,
 	sessionsMapAtom,
 } from "@shared/store/atoms";
 import { useNavigate, useParams } from "@tanstack/react-router";
+import type { ConversationScenario } from "@vetta-org/plugin-sdk";
 import type { ProjectDetailPageViewProps } from "@vetta-org/theme-ui/project";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { isAutomationOutputSession } from "../services/automation-session-groups";
 import { resolveSessionOpenTarget } from "./session-open-target";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -138,8 +144,9 @@ export interface ProjectDetailPageModel extends Omit<ProjectDetailPageViewProps,
 	batchProject: ReturnType<typeof useProjectDetail>["batchProject"];
 	decodedCwd: string;
 	isBatch: boolean;
-	isPersonal: boolean;
 	projectType: "normal" | "batch" | undefined;
+	/** 活动面板的对话场景：由项目自身推导，不继承上一个会话残留的全局场景。 */
+	activityPanelScenario: ConversationScenario;
 }
 
 export function useProjectDetailPageModel(
@@ -163,12 +170,18 @@ export function useProjectDetailPageModel(
 	const runningPaths = useAtomValue(runningSessionPathsAtom);
 	const runningTaskIds = useAtomValue(runningTaskIdsAtom);
 	const scheduledTasks = useAtomValue(scheduledTasksAtom);
+	// 任务列表只在自动化页等处才会载入；详情页直接进来时 atom 还是空的，得自己拉一次。
+	const { refreshTasks } = useScheduledTasks();
+	useEffect(() => {
+		void refreshTasks();
+	}, [refreshTasks]);
+	const automationLinks = useAtomValue(automationSessionLinksAtom);
+	const setSelectedTaskId = useSetAtom(selectedTaskIdAtom);
 	useEffect(() => {
 		if (!decodedCwd) return;
 		setActiveDocument("AGENTS.md");
 	}, [decodedCwd]);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
-	const isPersonal = useAtomValue(isPersonalModeAtom);
 	const [activityOpen, setActivityOpen] = useAtom(activityPanelOpenAtom);
 	const setConfirm = useSetAtom(confirmDialogAtom);
 	const setHeaderTitleHidden = useSetAtom(pageHeaderTitleHiddenAtom);
@@ -184,10 +197,25 @@ export function useProjectDetailPageModel(
 	const isBatch = !!batchProject;
 	const projectTypeKey = getProjectTypeKey(project);
 	const projectTypeLabel = projectTypeKey ? t(projectTypeKey) : null;
+	// 项目详情页没有自己的会话，全局 currentScenarioAtom 可能是 null（插件 tab 全部被
+	// fail-closed 过滤）或上一个会话残留的场景；按项目本身推导才稳定。
+	const defaultConversationCwd = useAtomValue(defaultConversationCwdAtom);
+	const activityPanelScenario = useMemo(
+		() =>
+			resolveConversationScenario({
+				cwd: decodedCwd,
+				defaultConversationCwd,
+				batch: isBatch,
+				projectType: project?.type,
+			}),
+		[decodedCwd, defaultConversationCwd, isBatch, project?.type],
+	);
 	const exportable = project?.type === "normal" || project?.type === "batch" || isBatch;
 	const recentSessions: ProjectDetailPageViewProps["recentSessions"] = useMemo(
 		() =>
 			sessions
+				// 「每次新建会话」的自动化产物归「自动化」栏；same-session 的固定会话用户会接着聊，仍算会话。
+				.filter((session) => !isAutomationOutputSession(session.path, automationLinks))
 				.filter((session) => resolveSessionOpenTarget([session], session.path) !== "unavailable")
 				.slice()
 				.sort((a, b) => {
@@ -204,13 +232,35 @@ export function useProjectDetailPageModel(
 					running: runningPaths.has(session.path),
 					pinned: pinnedSessions.has(session.path),
 				})),
-		[sessions, dateLocale, runningPaths, pinnedSessions],
+		[sessions, dateLocale, runningPaths, pinnedSessions, automationLinks],
+	);
+	const projectTasks = useMemo(
+		() => scheduledTasks.filter((task) => task.runTarget.projectCwd === decodedCwd),
+		[scheduledTasks, decodedCwd],
+	);
+	const automations: ProjectDetailPageViewProps["automations"] = useMemo(
+		() =>
+			projectTasks
+				.slice()
+				.sort((a, b) => {
+					const runA = Number(runningTaskIds.has(a.id));
+					const runB = Number(runningTaskIds.has(b.id));
+					if (runA !== runB) return runB - runA;
+					if (a.enabled !== b.enabled) return Number(b.enabled) - Number(a.enabled);
+					return (b.lastRunAt ?? 0) - (a.lastRunAt ?? 0);
+				})
+				.slice(0, 5)
+				.map((task) => ({
+					id: task.id,
+					name: task.name,
+					date: task.lastRunAt ? formatDate(task.lastRunAt, dateLocale) : null,
+					disabled: !task.enabled,
+					running: runningTaskIds.has(task.id),
+				})),
+		[projectTasks, runningTaskIds, dateLocale],
 	);
 	const runningSessionCount = sessions.reduce((count, session) => count + Number(runningPaths.has(session.path)), 0);
-	const runningTaskCount = scheduledTasks.reduce(
-		(count, task) => count + Number(task.runTarget.projectCwd === decodedCwd && runningTaskIds.has(task.id)),
-		0,
-	);
+	const runningTaskCount = projectTasks.reduce((count, task) => count + Number(runningTaskIds.has(task.id)), 0);
 
 	const handleExportProject = useCallback(() => {
 		setConfirm({
@@ -255,6 +305,7 @@ export function useProjectDetailPageModel(
 		onModeChange: setMode,
 		theme,
 		recentSessions,
+		automations,
 		runningSessionCount,
 		runningTaskCount,
 		batchProject,
@@ -267,7 +318,6 @@ export function useProjectDetailPageModel(
 		exportable,
 		isBatch,
 		isDirty,
-		isPersonal,
 		labels: {
 			showInFolderTitle: isMac ? t("detail.showInFinder") : t("detail.showInExplorer"),
 			showInFolder: isMac ? t("detail.finder") : t("detail.explorer"),
@@ -290,6 +340,10 @@ export function useProjectDetailPageModel(
 			startFirst: t("detail.recentSessions.startFirst"),
 			running: t("detail.runtime.runningSessions", { count: runningSessionCount }),
 			runningTasks: t("detail.runtime.runningTasks", { count: runningTaskCount }),
+			automationsTitle: t("detail.automations.title"),
+			automationsViewAll: t("detail.automations.viewAll"),
+			automationsDisabled: t("detail.automations.disabled"),
+			automationsNeverRun: t("detail.automations.neverRun"),
 			contextTitle: t("detail.context.title"),
 			claudeHint: t("detail.claudeMdHint"),
 			previewMode: t("detail.previewMode"),
@@ -299,6 +353,7 @@ export function useProjectDetailPageModel(
 			startEditing: t("detail.startEditing"),
 		},
 		loading,
+		activityPanelScenario,
 		projectType: project?.type,
 		projectTypeLabel,
 		saveStatus,
@@ -314,6 +369,13 @@ export function useProjectDetailPageModel(
 			} else {
 				void onOpenSession(decodedCwd, path);
 			}
+		},
+		onOpenAutomation: (taskId: string) => {
+			setSelectedTaskId(taskId);
+			void navigate({ to: "/automation" });
+		},
+		onOpenAllAutomations: () => {
+			void navigate({ to: "/automation" });
 		},
 		onContentChange: setContent,
 		onEditorBlur: () => setEditorFocused(false),

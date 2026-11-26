@@ -19,25 +19,10 @@
 		"languageTitle": "语言",
 		"languageHint": "默认跟随系统语言；可随时手动切换"
 	},
-	"updateRestart": {
-		"title": "更新已就绪",
-		"message": "新版本 {{latestVersion}} 已下载完成（当前 {{currentVersion}}）。立即重启 Atrix 以应用更新，或选择\"稍后\"，下次启动会再次提示。",
-		"later": "稍后",
-		"install": "立即重启"
-	},
 	"filePreview": {
 		"showInFolder": "在文件夹中显示",
 		"download": "下载",
 		"close": "关闭 (Esc)"
-	},
-	"login": {
-		"oauthButton": "授权登录",
-		"waitingTitle": "正在等待浏览器授权",
-		"waitingHint": "完成后将自动登录",
-		"reopen": "重新打开链接",
-		"retry": "重新授权",
-		"openFailed": "浏览器打开失败，请重试",
-		"rejected": "授权链接已失效，请重新登录"
 	},
 	"actionApproval": {
 		"reject": "拒绝",
@@ -185,8 +170,7 @@
 			"headers": "请求头",
 			"shortcutActionId": "快捷键动作",
 			"shortcutCombo": "组合键",
-			"quickpanelTrigger": "呼出触发",
-			"quickpanelBehavior": "发送后行为"
+			"configLocation": "配置位置"
 		},
 		"shortcuts": {
 			"ops": {
@@ -209,23 +193,7 @@
 					"summary": "把下列功能的自定义快捷键全部清掉，改回默认。",
 					"confirm": "全部恢复默认",
 					"badge": "重置",
-					"impact": "全局功能快捷键会恢复默认；快捷面板怎么呼出、发送后怎么做不会变。",
-					"warningTitle": "仅影响全局功能键",
-					"warning": "不会改快捷面板的呼出方式，也不会改发送后是打开主窗口还是后台运行。"
-				},
-				"set-quick-panel-trigger": {
-					"title": "修改快捷面板呼出方式",
-					"summary": "选择双击哪个键打开快捷面板。选「不启用」后只能从主窗口使用。",
-					"confirm": "保存呼出方式",
-					"badge": "快捷键",
-					"impact": "马上生效，可随时再改。"
-				},
-				"set-quick-panel-behavior": {
-					"title": "修改发送后行为",
-					"summary": "在快捷面板发出消息后，是打开主窗口跟进，还是只在后台继续跑。",
-					"confirm": "保存发送后行为",
-					"badge": "快捷键",
-					"impact": "只影响之后从快捷面板发出的对话。"
+					"impact": "全局功能快捷键会恢复默认。"
 				}
 			},
 			"bindingSectionTitle": "功能快捷键",
@@ -233,31 +201,7 @@
 			"actionField": "功能",
 			"comboField": "组合键",
 			"comboFieldHint": "点击后按下新的组合键即可录制",
-			"resetToDefault": "将恢复为 {{shortcut}}",
-			"quickPanelTriggerSectionTitle": "快捷面板呼出",
-			"quickPanelTriggerSectionDescription": "与设置页里的快捷面板触发方式相同。",
-			"quickPanelBehaviorSectionTitle": "发送后怎么做",
-			"quickPanelBehaviorSectionDescription": "与设置页里的「发送后行为」相同。",
-			"quickPanelTriggers": {
-				"none": "不启用",
-				"mod": "双击 ⌘ / Ctrl",
-				"alt": "双击 ⌥ / Alt",
-				"shift": "双击 ⇧"
-			},
-			"quickPanelTriggerHints": {
-				"none": "关闭双击呼出，需要时从主窗口操作",
-				"mod": "在任意处双击 ⌘（Mac）或 Ctrl（Windows）打开面板",
-				"alt": "在任意处双击 ⌥ / Alt 打开面板",
-				"shift": "在任意处双击 ⇧ 打开面板"
-			},
-			"quickPanelBehaviors": {
-				"foreground": "打开主窗口",
-				"background": "后台运行"
-			},
-			"quickPanelBehaviorHints": {
-				"foreground": "发送后打开主窗口并定位到新对话",
-				"background": "发送后只关闭面板，对话在后台继续"
-			}
+			"resetToDefault": "将恢复为 {{shortcut}}"
 		},
 		"models": {
 			"ops": {
@@ -318,7 +262,9 @@
 			},
 			"headersConfigured": "已包含自定义 headers（密钥已脱敏）",
 			"envPlaceholder": "每行一个 KEY=VALUE；密钥请在此手填，不要让 AI 传入",
-			"headersPlaceholder": "每行一个 HeaderName=value；密钥请在此手填"
+			"headersPlaceholder": "每行一个 HeaderName=value；密钥请在此手填",
+			"locationGlobal": "全局（所有项目）",
+			"locationProject": "仅此项目：{{path}}"
 		},
 		"skills": {
 			"ops": {
@@ -954,14 +900,43 @@
 		}
 	},
 	"modelSelect": {
+		"info": {
+			"button": "模型详情",
+			"source": "来源",
+			"id": "模型 ID",
+			"contextWindow": "上下文窗口",
+			"maxOutput": "最大输出",
+			"inputModes": "输入模式",
+			"reasoning": "思考强度",
+			"reasoningSupported": "支持",
+			"multiplier": "计费倍率",
+			"modality": {
+				"text": "文本",
+				"image": "图片",
+				"audio": "音频",
+				"video": "视频",
+				"pdf": "PDF"
+			}
+		},
+		"shortcutHint": "切换模型菜单",
+		"moreProviders": "更多服务商（{{count}}）",
+		"fewerProviders": "收起服务商",
+		"favorites": {
+			"tab": "收藏的模型",
+			"empty": "还没有收藏的模型",
+			"add": "收藏",
+			"remove": "取消收藏"
+		},
 		"placeholder": "选择模型",
 		"searchPlaceholder": "搜索模型或供应商",
+		"refresh": "刷新模型列表",
+		"refreshFailed": "刷新模型列表失败",
 		"clearSearch": "清除搜索",
 		"noResults": "未找到模型",
 		"noResultsHint": "请尝试其他模型名称、ID 或供应商",
 		"unset": "未设置",
 		"defaultBadge": "默认",
-		"visionBadge": "vision",
+		"visionBadge": "支持图片输入",
 		"cloudOnly": "云端",
 		"reasoningHeader": "推理",
 		"modelHeader": "模型",
@@ -1000,9 +975,6 @@
 			"theme": "主题配色"
 		},
 		"login": {
-			"title": "登录账号",
-			"subtitle": "登录后可同步云端能力与订阅；也可先跳过，稍后再登录",
-			"optionalHint": "登录可选，点「下一步」继续",
 			"signedInTitle": "已登录",
 			"signedInDesc": "欢迎回来，{{name}}",
 			"signedInFallback": "用户"
@@ -1031,15 +1003,18 @@
 		"empty": "没有匹配结果",
 		"emptyHint": "换个关键词试试",
 		"loading": "正在搜索会话",
-		"title": "命令面板",
-		"hintNavigate": "↑↓ 选择",
-		"hintSelect": "↵ 打开",
-		"hintClose": "esc 关闭",
+		"title": "启动器",
+		"actionsLabel": "操作",
+		"newSession": "新会话",
+		"hintSelect": "打开",
+		"hintClose": "关闭",
 		"overflow": "还有 {{count}} 条",
 		"sessionUnavailable": "当前无法打开这个会话",
 		"searchMarketplace": "在能力市场中搜索",
 		"trigger": "搜索",
 		"groups": {
+			"activeSessions": "进行中",
+			"recentSessions": "最近打开",
 			"projects": "项目",
 			"sessions": "会话",
 			"abilities": "能力",
@@ -1055,6 +1030,34 @@
 			"claw": "Claw",
 			"project": "项目",
 			"batch": "批量"
+		},
+		"sessionStatus": {
+			"running": "运行中",
+			"waiting": "等你回答",
+			"unread": "刚完成"
 		}
+	},
+	"updateDialog": {
+		"close": "关闭",
+		"installing": "正在重启…",
+		"retry": "重试",
+		"viewCurrent": "查看版本介绍",
+		"checkingTitle": "正在检查更新",
+		"checking": "正在连接更新服务器…",
+		"currentVersion": "当前版本 {{version}}",
+		"latestTitle": "已是最新版本",
+		"availableTitle": "发现新版本 {{version}}",
+		"versionChange": "当前 {{currentVersion}} → 新版本 {{latestVersion}}",
+		"downloadingTitle": "正在下载 {{version}}",
+		"downloading": "已下载 {{progress}}%，可关闭窗口，下载会在后台继续",
+		"readyTitle": "{{version}} 已准备好",
+		"readyMessage": "新版本 {{latestVersion}} 已下载完成（当前 {{currentVersion}}）。重启 Atrix 以应用更新。",
+		"installingTitle": "正在安装更新",
+		"errorTitle": "检查更新失败",
+		"errorFallback": "暂时无法连接更新服务器，请稍后再试。",
+		"currentTitle": "Atrix {{version}} 版本介绍",
+		"currentSubtitle": "这一版带来了什么",
+		"currentEmpty": "暂无这个版本的介绍。",
+		"updateNow": "立即更新"
 	}
 }

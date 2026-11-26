@@ -131,11 +131,6 @@ export interface PluginOfficialShortcutBinding {
 	isDefault: boolean;
 }
 
-export interface PluginOfficialQuickPanelSettings {
-	trigger: "none" | "mod" | "alt" | "shift";
-	postSendBehavior: "foreground" | "background";
-}
-
 export interface PluginOfficialImStatus {
 	enabled: boolean;
 	transport: string;
@@ -152,17 +147,31 @@ export interface PluginOfficialImLog {
 	fields?: Record<string, unknown>;
 }
 
+/**
+ * MCP 配置落点。省略时只操作全局 `~/.vetta/agent/mcp.json`；
+ * `scope: "project"` 必须同时给出项目根 `cwd`，读写 `<cwd>/.vetta/mcp.json`。
+ * 只给 `cwd` 时读操作会把项目一并纳入，写操作仍默认全局。
+ */
+export interface PluginOfficialMcpTarget {
+	scope?: "global" | "project";
+	cwd?: string;
+}
+
 export interface PluginOfficialMcpServerSummary {
 	name: string;
-	type: "http" | "stdio";
+	type: "http" | "sse" | "stdio";
 	disabled: boolean;
 	command?: string;
 	url?: string;
+	/** 仅在传了 `scope` 或 `cwd` 时返回。 */
+	scope?: "global" | "project";
+	/** 来自项目根 `.mcp.json`：Atrix 只读取，不会改写。 */
+	readOnly?: boolean;
 }
 
 export interface PluginOfficialMcpServerDetail {
 	name: string;
-	type?: "http" | "stdio";
+	type?: "http" | "sse" | "stdio";
 	command?: string;
 	args?: string[];
 	env?: Record<string, string>;
@@ -173,6 +182,8 @@ export interface PluginOfficialMcpServerDetail {
 	autoApprove?: string[];
 	startupTimeout?: number;
 	debug?: boolean;
+	scope?: "global" | "project";
+	readOnly?: boolean;
 }
 
 export type PluginOfficialMcpUpsertData =
@@ -188,7 +199,8 @@ export type PluginOfficialMcpUpsertData =
 			debug?: boolean;
 	  }
 	| {
-			type: "http";
+			/** `sse` 是旧式 HTTP+SSE 传输，仅为兼容仍在使用它的服务器。 */
+			type: "http" | "sse";
 			url?: string;
 			headers?: Record<string, string>;
 			disabled?: boolean;
@@ -299,7 +311,7 @@ export interface PluginOfficialProviderSummary {
 	/** 图标 symbol；配合 `ProviderIcon` 解析为内置图标，无则不画图标。 */
 	icon?: string;
 	/**
-	 * true = 来自登录后服务端下发的远程目录（如 Vetta Go），凭据是账号登录态而非本地
+	 * true = 来自登录后服务端下发的远程目录（如 Atrix Go），凭据是账号登录态而非本地
 	 * API Key，因此不会出现在本地模型配置里，也不可用 `upsertProvider` / `removeProvider` 改。
 	 */
 	remote?: boolean;
@@ -522,14 +534,10 @@ export interface PluginOfficialApi {
 	};
 	shortcuts: {
 		listAvailableActions(): Array<{ id: string; defaultShortcut: string }>;
-		get(): Promise<{ bindings: PluginOfficialShortcutBinding[]; quickPanel: PluginOfficialQuickPanelSettings }>;
+		get(): Promise<{ bindings: PluginOfficialShortcutBinding[] }>;
 		setBinding(id: string, shortcut: string): Promise<{ bindings: PluginOfficialShortcutBinding[] }>;
 		resetBinding(id: string): Promise<{ bindings: PluginOfficialShortcutBinding[]; shortcut: string }>;
 		resetAllBindings(): Promise<{ bindings: PluginOfficialShortcutBinding[] }>;
-		setQuickPanelTrigger(trigger: PluginOfficialQuickPanelSettings["trigger"]): Promise<PluginOfficialQuickPanelSettings>;
-		setQuickPanelBehavior(
-			behavior: PluginOfficialQuickPanelSettings["postSendBehavior"],
-		): Promise<PluginOfficialQuickPanelSettings>;
 	};
 	im: {
 		getStatus(): Promise<PluginOfficialImStatus>;
@@ -555,17 +563,21 @@ export interface PluginOfficialApi {
 		}): Promise<{ ok: boolean; error?: string }>;
 	};
 	mcp: {
-		list(): Promise<PluginOfficialMcpServerSummary[]>;
-		get(name: string): Promise<PluginOfficialMcpServerDetail>;
-		listNames(): Promise<string[]>;
-		upsert(name: string, data: PluginOfficialMcpUpsertData): Promise<PluginOfficialMcpServerDetail>;
-		setEnabled(name: string, enabled: boolean): Promise<void>;
-		remove(name: string): Promise<void>;
+		list(target?: PluginOfficialMcpTarget): Promise<PluginOfficialMcpServerSummary[]>;
+		get(name: string, target?: PluginOfficialMcpTarget): Promise<PluginOfficialMcpServerDetail>;
+		listNames(target?: PluginOfficialMcpTarget): Promise<string[]>;
+		upsert(
+			name: string,
+			data: PluginOfficialMcpUpsertData,
+			target?: PluginOfficialMcpTarget,
+		): Promise<PluginOfficialMcpServerDetail>;
+		setEnabled(name: string, enabled: boolean, target?: PluginOfficialMcpTarget): Promise<void>;
+		remove(name: string, target?: PluginOfficialMcpTarget): Promise<void>;
 	};
 	models: {
 		/**
 		 * 用户当前可选的全部模型：本地配置的 provider **加上**登录后服务端下发的远程目录
-		 * （Vetta Go 等，`remote: true`）。同一个 `provider/modelId` 以本地为准。
+		 * （Atrix Go 等，`remote: true`）。同一个 `provider/modelId` 以本地为准。
 		 * 与宿主输入栏模型选择器同一口径。
 		 */
 		list(): Promise<{ defaultModel: string | null; providers: PluginOfficialProviderSummary[] }>;
@@ -707,7 +719,6 @@ export interface PluginOfficialApi {
 		set(input: {
 			mode?: "light" | "dark" | "auto";
 			themeId?: string;
-			cursorStyle?: "default" | "stoat";
 		}): Promise<unknown>;
 		setLanguage(language: "zh" | "en"): Promise<unknown>;
 		listThemeIds(): string[];

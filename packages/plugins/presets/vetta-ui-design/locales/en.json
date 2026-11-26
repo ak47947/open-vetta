@@ -274,6 +274,7 @@
 	"gallery.detail.aria": "{{name}} style details",
 	"gallery.detail.palette": "Palette",
 	"gallery.detail.resources": "Resources",
+	"gallery.detail.author": "Author",
 	"gallery.detail.license": "License",
 	"gallery.detail.source": "View source",
 	"gallery.detail.openDemo": "Open demo in browser",
@@ -374,5 +375,6 @@
 	"interaction.device.follow": "Match design",
 	"interaction.deviceMenu": "Device & model",
 	"interaction.switchDevice": "Switch device",
-	"interaction.openExternal.short": "Browser"
+	"interaction.openExternal.short": "Browser",
+	"header.openCanvas": "Open canvas"
 }

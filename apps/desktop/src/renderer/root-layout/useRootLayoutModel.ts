@@ -1,22 +1,25 @@
+import { decodeRouteValue, rememberSpaceLocation, useSpaceNavigation } from "@domains/project/hooks/useSpaceNavigation";
 import type {
 	DesktopMcpElicitationRequest,
 	DesktopMcpTask,
 	DesktopMcpTasksChangedEvent,
 	DesktopUserQuestionRequest,
 } from "@preload/api";
+import { MAIN_SPACE, spacesAtom } from "@shared/store/spaces";
 import { useMatches, useNavigate } from "@tanstack/react-router";
 import type { CodingAgentPlanReviewRequest } from "@vetta/coding-agent/function-extensions";
 import { getDefaultStore, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FILE_EDITOR_SAVE_EVENT } from "@/shared/shortcuts";
+import { FILE_EDITOR_SAVE_EVENT, OPEN_MODEL_SELECTOR_EVENT, SPACE_SHORTCUT_ACTIONS } from "@/shared/shortcuts";
 import { loadNewSessionPage } from "../domains/conversation/components/loadNewSessionPage";
 import { useAppInit } from "../domains/conversation/hooks/useAppInit";
 import { useSessionManager } from "../domains/conversation/hooks/useSessionManager";
-import { useNotificationInit } from "../domains/message/hooks/useNotificationInit";
 import { useProjectActions } from "../domains/project/hooks/useProjects";
 import { playNotificationSound } from "../shared/audio/notification-sound-player";
+import { useAttentionSessionsSync } from "../shared/hooks/useAttentionSessionsSync";
 import { useModelCatalogSync } from "../shared/hooks/useModelCatalogSync";
 import { useNarrowScreen } from "../shared/hooks/useNarrowScreen";
+import { usePendingInteractionsSync } from "../shared/hooks/usePendingInteractionsSync";
 import { useRunningSessionsSync } from "../shared/hooks/useRunningSessionsSync";
 import { useSessionPinsSync } from "../shared/hooks/useSessionPinsSync";
 import { useGlobalShortcuts } from "../shared/hooks/useShortcuts";
@@ -43,6 +46,7 @@ import {
 	sidebarCollapsedAtom,
 	sidebarWidthAtom,
 } from "../shared/store/atoms";
+import { recordRecentSessionVisitAtom } from "../shared/store/recent-sessions-atoms";
 import { showToast } from "../shared/store/toast-atoms";
 import { shouldShowChatRoutePending } from "./chat-route-pending";
 import { syncPendingInteractions } from "./pending-interaction-sync";
@@ -105,21 +109,57 @@ export function useRootLayoutModel(): RootLayoutModel {
 		}
 	}, [narrow, cancelOverlayClose]);
 
-	// 云会话生命周期已上移到 App 根部的 <CloudAuthBoot />（lite 构建不挂载）
 	useAppInit();
-	useNotificationInit();
 	useUpdaterInit();
 	// 模型目录保鲜：focus / 切回可见时按 TTL 重拉，服务端增删模型无需重启应用。
 	useModelCatalogSync();
 	// 全局 running-sessions 订阅必须挂在始终挂载的 App 上：它是 streaming 状态真值
 	// 来源之一，挂在会被卸载的 Sidebar 上会在卸载期间丢 RUNNING_CHANGED 事件。
 	useRunningSessionsSync();
+	const recordRecentSessionVisit = useSetAtom(recordRecentSessionVisitAtom);
+	useAttentionSessionsSync();
+	// 同上：侧栏的「等你处理」标记也以主进程为真值，挂在会被卸载的侧栏上会漏事件。
+	usePendingInteractionsSync();
 	// 会话置顶以主进程为准（手机也会改它），同理挂在根部。
 	useSessionPinsSync();
 	// 队列的出队/续发已收归主进程 kernel（ADR-0060）：followUp 在 turn 自然停止点
 	// 接力消费，renderer 不再需要全局出队调度器。
 	// 会话打开/发送的唯一挂载点。ChatPage 与新会话页走模块级 ref，避免再挂一份。
-	const { openSession, sendMessage } = useSessionManager();
+	const { openSession } = useSessionManager();
+	const switchSpace = useSpaceNavigation();
+	const activePath = activeSession?.sessionPath;
+	const activeCwd = activeSession?.cwd;
+	useEffect(() => {
+		if (!defaultConversationCwd) return;
+		const store = getDefaultStore();
+		if (currentPath === "/" && activePath && activeCwd) {
+			rememberSpaceLocation(store, { kind: "conversation", path: activePath, cwd: activeCwd });
+		} else if (currentPath.startsWith("/project/")) {
+			rememberSpaceLocation(store, { kind: "project", cwd: decodeRouteValue(currentPath.slice(9)) });
+		} else if (currentPath.startsWith("/agent-teams/") && currentPath.includes("/sessions/")) {
+			const [, , rawTeam, , rawSession] = currentPath.split("/");
+			if (!rawTeam || !rawSession) return;
+			const teamId = decodeRouteValue(rawTeam);
+			const sessionId = decodeRouteValue(rawSession);
+			let cancelled = false;
+			void window.vetta.agentTeams
+				.listSessions(teamId)
+				.then((sessions) => {
+					const session = sessions.find(({ id }) => id === sessionId);
+					if (cancelled || !session) return;
+					rememberSpaceLocation(store, {
+						kind: "team",
+						teamId,
+						sessionId,
+						projectCwd: session.workspaceKind === "project" ? session.cwd : undefined,
+					});
+				})
+				.catch((error: unknown) => console.warn("[space] remember Team session failed", error));
+			return () => {
+				cancelled = true;
+			};
+		}
+	}, [activeCwd, activePath, currentPath, defaultConversationCwd]);
 
 	useEffect(() => {
 		if (!hasUnsavedFileChanges) return;
@@ -145,10 +185,21 @@ export function useRootLayoutModel(): RootLayoutModel {
 	// 持久化定位信息已足够恢复，无需等待默认 cwd 或侧栏历史列表完成加载。
 	// runtimeId 不能跨 renderer 生命周期复用，必须重新走 openSession/session.create。
 	useEffect(() => {
-		if (currentPath !== "/" || sessionRestoreAttemptedRef.current) {
+		if (currentPath !== "/" || !defaultConversationCwd || sessionRestoreAttemptedRef.current) {
 			return;
 		}
 		sessionRestoreAttemptedRef.current = true;
+		const state = getDefaultStore().get(spacesAtom);
+		if (
+			!activeSession &&
+			!pendingSessionCreation &&
+			!pendingSessionOpen &&
+			(state.selected !== MAIN_SPACE || state.locations[MAIN_SPACE])
+		) {
+			setSessionRestoreState("restoring");
+			void switchSpace(state.selected, true).finally(() => setSessionRestoreState("complete"));
+			return;
+		}
 		if (activeSession || pendingSessionCreation || pendingSessionOpen || !lastActiveSession) {
 			setSessionRestoreState("complete");
 			return;
@@ -167,6 +218,8 @@ export function useRootLayoutModel(): RootLayoutModel {
 		pendingSessionCreation,
 		pendingSessionOpen,
 		lastActiveSession,
+		defaultConversationCwd,
+		switchSpace,
 		openSession,
 		setActiveSession,
 		setLastActiveSession,
@@ -200,10 +253,12 @@ export function useRootLayoutModel(): RootLayoutModel {
 
 	// 上报「聊天页当前所在 session」给主进程：仅在聊天路由 "/" 且有 activeSession
 	// 时报其 sessionPath，否则 null。主进程据此 + 窗口聚焦态做系统通知抑制判定。
+	// 同一时机记一次「最近打开」：命令面板据此把打开过的会话排在前面。
 	useEffect(() => {
 		const sessionPath = currentPath === "/" ? activeSession?.sessionPath || null : null;
 		void window.vetta.notification.setForegroundSession(sessionPath);
-	}, [currentPath, activeSession]);
+		if (sessionPath) recordRecentSessionVisit(sessionPath);
+	}, [currentPath, activeSession, recordRecentSessionVisit]);
 
 	// 点击系统通知 → 主进程已前台化窗口，这里把对应 session 打开并路由到聊天页。
 	useEffect(() => {
@@ -225,23 +280,6 @@ export function useRootLayoutModel(): RootLayoutModel {
 			}),
 		[],
 	);
-
-	// 快捷面板回车 → 主进程已据 postSendBehavior 处理窗口聚焦，这里在默认「对话」目录下
-	// 新建会话并直接发送 prompt（复用通知路由同款 openSession + sendMessage）。
-	useEffect(() => {
-		return window.vetta.quickPanel.onRunPrompt(({ text }) => {
-			const cwd = defaultConversationCwd;
-			if (!cwd || !text.trim()) return;
-			void (async () => {
-				try {
-					await openSession(cwd);
-					await sendMessage(text);
-				} catch (error) {
-					console.warn("[RootLayout] quick panel run prompt failed", error);
-				}
-			})();
-		});
-	}, [openSession, sendMessage, defaultConversationCwd]);
 
 	useEffect(() => {
 		const store = getDefaultStore();
@@ -446,6 +484,13 @@ export function useRootLayoutModel(): RootLayoutModel {
 	useGlobalShortcuts(
 		useCallback(
 			(actionId: string) => {
+				const spaceIndex = SPACE_SHORTCUT_ACTIONS.findIndex(({ id }) => id === actionId);
+				if (spaceIndex >= 0) {
+					const { spaces } = getDefaultStore().get(spacesAtom);
+					const id = spaceIndex === 0 ? MAIN_SPACE : spaces[spaceIndex - 1]?.id;
+					if (id) void switchSpace(id);
+					return;
+				}
 				switch (actionId) {
 					case "new-session": {
 						// 默认走「对话」项目的 NewSession 页面；若主进程尚未返回 cwd，退回第一个项目。
@@ -463,12 +508,16 @@ export function useRootLayoutModel(): RootLayoutModel {
 						break;
 					}
 					case "open-settings": {
-						void navigate({ to: "/settings/$tab", params: { tab: "account" } });
+						void navigate({ to: "/settings/$tab", params: { tab: "general" } });
 						break;
 					}
 					case "open-command-menu": {
-						// 面板内自己绑了一条 mod+k 关闭；能走到这里说明面板是关着的。
+						// 面板内自己绑了一条开关键用于关闭；能走到这里说明面板是关着的。
 						setCommandMenuOpen(true);
+						break;
+					}
+					case "open-model-selector": {
+						window.dispatchEvent(new Event(OPEN_MODEL_SELECTOR_EVENT));
 						break;
 					}
 					case "save-file": {
@@ -477,7 +526,7 @@ export function useRootLayoutModel(): RootLayoutModel {
 					}
 				}
 			},
-			[openProject, navigate, setCommandMenuOpen],
+			[openProject, navigate, setCommandMenuOpen, switchSpace],
 		),
 	);
 

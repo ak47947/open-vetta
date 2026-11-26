@@ -27,9 +27,9 @@ import { registerPluginCapabilitiesIpc } from "./plugin-capabilities.js";
 import { registerPluginMediaProvidersIpc } from "./plugin-media-providers.js";
 import { registerPluginOcrProvidersIpc } from "./plugin-ocr-providers.js";
 import { registerPluginsIpc } from "./plugins.js";
+import { registerProjectCloneIpc } from "./project-clone.js";
 import { registerProjectExportIpc } from "./project-export.js";
 import { registerProjectsIpc } from "./projects.js";
-import { registerQuickPanelIpc } from "./quickpanel.js";
 import { registerRemotePairingIpc } from "./remote-pairing.js";
 import { registerRuntimeConfigurationIpc } from "./runtime-configuration.js";
 import { registerRuntimesIpc } from "./runtimes.js";
@@ -66,6 +66,7 @@ interface IpcTeardown {
 	teardownMedia: () => void;
 	teardownDebug: () => void;
 	teardownProjectExport: () => void;
+	teardownProjectClone: () => void;
 	teardownProjects: () => void;
 	teardownSsh: () => void;
 	teardownWebhook: () => void;
@@ -81,7 +82,6 @@ interface IpcTeardown {
 	teardownTerminal: () => void;
 	teardownConversationTags: () => void;
 	teardownSessionPins: () => void;
-	teardownQuickPanel: () => void;
 	teardownAppshot: () => void;
 	teardownDiagnostics: () => void;
 	teardownOnboarding: () => void;
@@ -118,6 +118,7 @@ export function registerAllIpc(
 		teardownMedia: registerMediaIpc(),
 		teardownDebug: registerDebugIpc(),
 		teardownProjectExport: registerProjectExportIpc(),
+		teardownProjectClone: registerProjectCloneIpc(),
 		teardownProjects: registerProjectsIpc(),
 		teardownSsh: registerSshIpc(),
 		teardownWebhook: registerWebhookIpc(),
@@ -133,7 +134,6 @@ export function registerAllIpc(
 		teardownTerminal: registerTerminalIpc(),
 		teardownConversationTags: registerConversationTagsIpc(webContents),
 		teardownSessionPins: registerSessionPinsIpc(webContents),
-		teardownQuickPanel: registerQuickPanelIpc(),
 		teardownAppshot: registerAppshotIpc(),
 		teardownDiagnostics: registerDiagnosticsIpc(),
 		teardownOnboarding: registerOnboardingIpc(),
@@ -163,6 +163,7 @@ export function teardownAllIpc(teardown: IpcTeardown): void {
 	teardown.teardownMedia();
 	teardown.teardownDebug();
 	teardown.teardownProjectExport();
+	teardown.teardownProjectClone();
 	teardown.teardownProjects();
 	teardown.teardownSsh();
 	teardown.teardownWebhook();
@@ -178,7 +179,6 @@ export function teardownAllIpc(teardown: IpcTeardown): void {
 	teardown.teardownTerminal();
 	teardown.teardownConversationTags();
 	teardown.teardownSessionPins();
-	teardown.teardownQuickPanel();
 	teardown.teardownAppshot();
 	teardown.teardownDiagnostics();
 	teardown.teardownOnboarding();

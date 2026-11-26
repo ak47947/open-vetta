@@ -3,6 +3,7 @@ import { applyActiveTagFilterToNewConversation } from "@domains/project/services
 import type { DesktopSessionAttachmentSnapshot } from "@preload/api";
 import { i18n } from "@shared/i18n";
 import { waitForCommittedPaint } from "@shared/lib/committed-paint";
+import { resolveConversationScenario } from "@shared/lib/conversation-scenario";
 import { perfSendMark } from "@shared/lib/perf-send";
 import {
 	perfSessionSwitchBegin,
@@ -39,8 +40,8 @@ import {
 	sessionsMapAtom,
 } from "@shared/store/atoms";
 import { setQueueForSessionAtom, setQueuePausedAtom } from "@shared/store/message-queue-atoms";
+import { assignSpace, spacesAtom } from "@shared/store/spaces";
 import { useNavigate } from "@tanstack/react-router";
-import type { ConversationScenario } from "@vetta-org/plugin-sdk";
 import { getDefaultStore, useAtomValue, useSetAtom } from "jotai";
 import { type MutableRefObject, startTransition, useCallback, useRef } from "react";
 import {
@@ -335,18 +336,19 @@ export function useSessionOpener(): SessionOpenerController {
 			const projectType = getProjects().find((project) => project.cwd === cwd)?.type;
 			const sessionKind = isBatchSession || isBatchProject || projectType === "batch" ? "other" : "conversation";
 			// 对话场景显式下发（不依赖 sessionKind，避免改 kind 牵动 VETTA_CLI/子目录等行为）：
-			// - 批量 → "batch"（与 batch-task-executor 一致，重开不退化成 project，输入栏 badge 不复活）。
-			// - 默认「对话」项目（cwd 归一到 defaultConversationCwd）→ "conversation"。
-			// - 其余交互式项目 → "project"。此前普通项目被 sessionKind="conversation" 误标成
-			//   "conversation"，导致 scope_use:["project"] 的工具/插件插槽永不命中。
+			// 批量 → batch（与 batch-task-executor 一致），默认「对话」项目 → conversation，
+			// 其余交互式项目 → project。此前普通项目被 sessionKind="conversation" 误标成
+			// "conversation"，导致 scope_use:["project"] 的工具/插件插槽永不命中。
+			// 新会话页与项目详情页复用同一个纯函数，插槽过滤才不会与建会话时的判定错位。
+			// 标签只落在「对话」项目的会话上；与新会话的场景用同一个归桶谓词。
 			const defaultCwd = defaultConversationCwdRef.current;
 			const isDefaultConversation = !!defaultCwd && conversationBucketCwd(cwd, defaultCwd) === defaultCwd;
-			const scenario: ConversationScenario =
-				isBatchSession || isBatchProject || projectType === "batch"
-					? "batch"
-					: isDefaultConversation
-						? "conversation"
-						: "project";
+			const scenario = resolveConversationScenario({
+				cwd,
+				defaultConversationCwd: defaultConversationCwdRef.current,
+				batch: isBatchSession || isBatchProject,
+				projectType,
+			});
 			let createResult: Awaited<ReturnType<typeof window.vetta.session.create>>;
 			try {
 				perfSendMark("session-create-start", interactionId);
@@ -409,6 +411,14 @@ export function useSessionOpener(): SessionOpenerController {
 			// ADR-0007: 「对话」项目下 main 会把 cwd 改写成 per-session 子目录，
 			// 这里以 main 返回的 effective cwd 为准，保证 FilesPanel/调试 cwd 都指向子目录。
 			const effectiveCwd = createResult.cwd ?? cwd;
+			const spaceId = options?.newConversationSpace;
+			const assignNewConversation = (path: string): void => {
+				if (isExistingSessionOpen || !spaceId || !path) return;
+				getDefaultStore().set(spacesAtom, (state) =>
+					assignSpace(state, { kind: "conversation", key: path }, spaceId),
+				);
+			};
+			assignNewConversation(canonicalSessionPath);
 
 			// 拿到 sessionId 就立即写 activeSession；默认再 navigate 到 ChatView。
 			// main 返回 Runtime 实际持有的 canonical sessionPath；历史会话导入时它不同于
@@ -453,6 +463,7 @@ export function useSessionOpener(): SessionOpenerController {
 				});
 			}
 			const cachedKey = resolvedSessionPath;
+			if (!canonicalSessionPath) assignNewConversation(cachedKey);
 			let subscribed = false;
 			// History and the running Turn's replay arrive as one snapshot (ADR-0146). The
 			// Turn is rebuilt from its events alone, so the snapshot has no gap or overlap.
@@ -549,7 +560,7 @@ export function useSessionOpener(): SessionOpenerController {
 			// 新会话没有历史需要回放。草稿迁移后先建立事件订阅并立刻派发首条 Prompt；
 			// getState、上下文恢复和侧边栏对账都不再位于首条发送的关键路径。
 			if (sessionPath === undefined) {
-				claimNewSessionInputDraft(cachedKey, newSessionInputDraftKey(cwd));
+				claimNewSessionInputDraft(cachedKey, options?.newSessionDraftKey ?? newSessionInputDraftKey(cwd));
 				if (!(await subscribeForPrompt())) return;
 			}
 
@@ -580,7 +591,7 @@ export function useSessionOpener(): SessionOpenerController {
 
 			// 打开「已有」会话（sessionPath 有值）：真相源为后端会话 settings，把后端模型 pull
 			// 到前端镜像，避免用全局 atom 的旧值 push 覆盖本会话（会污染其它会话已选的模型）。
-			// 「新建」会话（sessionPath 为 undefined，如欢迎页/快捷面板）：后端刚建出的会话用的是
+			// 「新建」会话（sessionPath 为 undefined，如欢迎页）：后端刚建出的会话用的是
 			// 默认模型，而前端 selectedModel 才是用户刚在欢迎页选好的真相源。此时若 pull 回填会把
 			// 用户的选择覆盖成默认模型（显示与本轮实际发送的模型不一致），所以反过来把前端选择
 			// push 到后端会话 settings，两端保持一致。

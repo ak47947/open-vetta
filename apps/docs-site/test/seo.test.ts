@@ -51,7 +51,7 @@ describe("metadata", () => {
 		});
 
 		const home = buildPageMetadata({
-			title: "Vetta 文档",
+			title: "Atrix 文档",
 			description: site.description,
 			path: "/",
 			isHome: true,
@@ -108,11 +108,11 @@ describe("metadata", () => {
 			canonical: "/product/models/",
 			types: { "text/markdown": "/product/models.md" },
 		});
-		expect(metadata.title).toEqual({ absolute: "Configure models | Vetta Documentation" });
+		expect(metadata.title).toEqual({ absolute: "Configure models | Atrix Documentation" });
 		expect(metadata.alternates).not.toHaveProperty("languages");
 		expect(metadata.openGraph).toMatchObject({
 			locale: "en_US",
-			siteName: "Vetta Documentation",
+			siteName: "Atrix Documentation",
 			url: "/product/models/",
 		});
 	});

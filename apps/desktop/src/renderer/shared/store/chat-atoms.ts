@@ -75,11 +75,15 @@ export type {
 } from "@shared/conversation";
 
 /**
- * Pending replacement of the latest user message. The destructive backend change
- * runs on send (not on click), so cancelling the edit has no session side effects.
+ * A user message being edited in the composer. The history change runs on send
+ * (not on click), so cancelling the edit has no session side effects.
+ * - `replace`: the latest user message; it and its reply are replaced in place.
+ * - `branch`: an earlier one; the edit grows a sibling branch from its parent and
+ *   the original message with everything after it stays on the old branch.
  */
 export interface PendingMessageEdit {
 	entryId: string;
+	mode: "replace" | "branch";
 }
 
 export interface ActiveSession {
@@ -257,6 +261,9 @@ export const activeSessionAtom = atom<ActiveSession | null>(null);
  * 每条消息都触发一次重渲。
  */
 export const activeSessionCwdAtom = selectAtom(activeSessionAtom, (session) => session?.cwd ?? null);
+/** 同上：只在 runtimeId / sessionPath 变化时通知，供 `useActiveConversation()` 这类高频订阅方使用。 */
+export const activeSessionRuntimeIdAtom = selectAtom(activeSessionAtom, (session) => session?.runtimeId ?? null);
+export const activeSessionPathAtom = selectAtom(activeSessionAtom, (session) => session?.sessionPath ?? null);
 export const pendingSessionCreationAtom = atom<PendingSessionCreation | null>(null);
 export const pendingSessionOpenAtom = atom<PendingSessionOpen | null>(null);
 /** 已接受发送、但新会话/runtime 尚未准备好的 UI 过渡态。 */
@@ -370,6 +377,13 @@ export const pendingMcpElicitationsAtom = atom<Record<string, DesktopMcpElicitat
 export const promptSuggestionsAtom = atom<Record<string, string[]>>({});
 
 /**
+ * 输入框里那条预测（第一条）已被放弃的会话：记下当时那组预测的数组引用。
+ * 用户打字、按 Esc 或按 Tab 填入后，这一组的第一条不再出现在输入框里；
+ * 新一轮预测会换一个新数组，自然重新显示，不需要另外清理。
+ */
+export const promptSuggestionDismissedAtom = atom<Record<string, readonly string[]>>({});
+
+/**
  * 输入预测「生成中」状态，按会话 runtimeId 索引。生成调用在飞时为 true，
  * 用于在该会话末条 assistant 消息的操作栏右侧显示「Vetta 正在预测…」闪光提示。
  */
@@ -413,6 +427,34 @@ export const reasoningByModelAtom = atom(
 	},
 );
 
+/**
+ * 收藏的模型 key（"provider/modelId"），按收藏先后排列。
+ * 存 localStorage，仅本机生效；所有已挂载的模型选择器共用同一份，收藏后立刻同步。
+ */
+const FAVORITE_MODELS_KEY = "vetta-favorite-models";
+function loadFavoriteModels(): string[] {
+	try {
+		const raw = localStorage.getItem(FAVORITE_MODELS_KEY);
+		const parsed: unknown = raw ? JSON.parse(raw) : [];
+		return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+	} catch {
+		return [];
+	}
+}
+const favoriteModelsBaseAtom = atom<string[]>(loadFavoriteModels());
+export const favoriteModelsAtom = atom(
+	(get) => get(favoriteModelsBaseAtom),
+	(get, set, update: string[] | ((current: string[]) => string[])) => {
+		const next = typeof update === "function" ? update(get(favoriteModelsBaseAtom)) : update;
+		set(favoriteModelsBaseAtom, next);
+		try {
+			localStorage.setItem(FAVORITE_MODELS_KEY, JSON.stringify(next));
+		} catch {
+			// ignore persistence errors (private mode / quota)
+		}
+	},
+);
+
 /** Whether the current session model supports image input */
 export const modelSupportsImagesAtom = atom<boolean>(true);
 
@@ -449,6 +491,8 @@ export const actionButtonHandlersAtom = atom<Map<string, () => void>>(new Map())
 
 /** Options for {@link openSessionFnRef} / useSessionManager.openSession. */
 export interface OpenSessionOptions {
+	newSessionDraftKey?: string;
+	newConversationSpace?: string;
 	/**
 	 * When false, create/subscribe the session and set it active, but stay on the
 	 * current route (e.g. Settings AI assist fly-to-sidebar). Default true.

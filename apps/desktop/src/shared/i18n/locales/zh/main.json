@@ -2,9 +2,15 @@
 	"tray": {
 		"showWindow": "显示窗口",
 		"hideWindow": "隐藏窗口",
-		"quitVetta": "退出 Atrix",
+		"quitAtrix": "退出 Atrix",
 		"quit": "退出",
 		"hideToTray": "隐藏到托盘"
+	},
+	"quitConfirmation": {
+		"title": "退出 Atrix？",
+		"detail": "已保存的对话会保留，正在运行的任务将停止。",
+		"quit": "退出",
+		"cancel": "取消"
 	},
 	"menu": {
 		"app": {
@@ -81,7 +87,7 @@
 	"mcpOAuth": {
 		"authorizationSuccessful": "授权成功",
 		"authorizationFailed": "授权失败",
-		"returnToVetta": "你可以关闭此窗口并返回 Atrix。",
+		"returnToAtrix": "你可以关闭此窗口并返回 Atrix。",
 		"closeAndRetry": "你可以关闭此窗口并返回 Atrix 重试。",
 		"missingAuthorizationCode": "缺少授权码",
 		"callbackAlreadySettled": "OAuth 回调已经结束",

@@ -30,6 +30,7 @@ export {
 } from "./helper-deployment.js";
 export { createNodeSshProcessRunner, type NodeSshProcessRunnerOptions } from "./node-process-runner.js";
 export {
+	isSshTransportFailureExitCode,
 	SSH_TRANSPORT_FAILURE_EXIT_CODE,
 	type SshChannelInvocation,
 	type SshProcessChannel,
@@ -105,6 +106,7 @@ export {
 export { SshConnectionManager, type SshConnectionManagerOptions } from "./ssh-connection-manager.js";
 export {
 	normalizeSshHostInput,
+	type SshAuthMethod,
 	type SshConnectionStatus,
 	type SshHost,
 	type SshHostInput,

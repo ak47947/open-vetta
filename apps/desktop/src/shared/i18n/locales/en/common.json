@@ -19,25 +19,10 @@
 		"languageTitle": "Language",
 		"languageHint": "Defaults to your system language; change anytime"
 	},
-	"updateRestart": {
-		"title": "Update Ready",
-		"message": "Version {{latestVersion}} has been downloaded (current {{currentVersion}}). Restart Atrix now to apply the update, or choose \"Later\" to be reminded next launch.",
-		"later": "Later",
-		"install": "Restart Now"
-	},
 	"filePreview": {
 		"showInFolder": "Show in Folder",
 		"download": "Download",
 		"close": "Close (Esc)"
-	},
-	"login": {
-		"oauthButton": "Authorize & Sign In",
-		"waitingTitle": "Waiting for browser authorization",
-		"waitingHint": "You'll be signed in automatically",
-		"reopen": "Open the link again",
-		"retry": "Authorize again",
-		"openFailed": "Couldn't open your browser. Please try again.",
-		"rejected": "This authorization link is no longer valid. Please sign in again."
 	},
 	"actionApproval": {
 		"reject": "Reject",
@@ -185,8 +170,7 @@
 			"headers": "Headers",
 			"shortcutActionId": "Shortcut action",
 			"shortcutCombo": "Key combo",
-			"quickpanelTrigger": "Summon trigger",
-			"quickpanelBehavior": "After send"
+			"configLocation": "Config location"
 		},
 		"shortcuts": {
 			"ops": {
@@ -209,23 +193,7 @@
 					"summary": "Clear custom shortcuts for the features below and restore defaults.",
 					"confirm": "Restore all defaults",
 					"badge": "Reset",
-					"impact": "Global feature shortcuts return to defaults. Quick Panel summon and after-send stay the same.",
-					"warningTitle": "Global feature keys only",
-					"warning": "Does not change how you open the Quick Panel, or whether send opens the main window."
-				},
-				"set-quick-panel-trigger": {
-					"title": "Change Quick Panel summon",
-					"summary": "Choose which key to double-tap to open the Quick Panel. “Disabled” means you’ll use the main window instead.",
-					"confirm": "Save summon method",
-					"badge": "Shortcut",
-					"impact": "Applies immediately. You can change it again anytime."
-				},
-				"set-quick-panel-behavior": {
-					"title": "Change after-send behavior",
-					"summary": "After you send from the Quick Panel, open the main window to follow up, or keep running in the background.",
-					"confirm": "Save after-send behavior",
-					"badge": "Shortcut",
-					"impact": "Only affects chats you start later from the Quick Panel."
+					"impact": "Global feature shortcuts return to defaults."
 				}
 			},
 			"bindingSectionTitle": "Feature shortcuts",
@@ -233,31 +201,7 @@
 			"actionField": "Feature",
 			"comboField": "Key combo",
 			"comboFieldHint": "Click, then press the new combination to record",
-			"resetToDefault": "Will restore to {{shortcut}}",
-			"quickPanelTriggerSectionTitle": "Quick Panel summon",
-			"quickPanelTriggerSectionDescription": "Same options as on the Shortcuts settings page.",
-			"quickPanelBehaviorSectionTitle": "After you send",
-			"quickPanelBehaviorSectionDescription": "Same as “after-send behavior” on the settings page.",
-			"quickPanelTriggers": {
-				"none": "Disabled",
-				"mod": "Double-tap ⌘ / Ctrl",
-				"alt": "Double-tap ⌥ / Alt",
-				"shift": "Double-tap ⇧"
-			},
-			"quickPanelTriggerHints": {
-				"none": "Turn off double-tap summon; use the main window when needed",
-				"mod": "Double-tap ⌘ (Mac) or Ctrl (Windows) anywhere to open the panel",
-				"alt": "Double-tap ⌥ / Alt anywhere to open the panel",
-				"shift": "Double-tap ⇧ anywhere to open the panel"
-			},
-			"quickPanelBehaviors": {
-				"foreground": "Open main window",
-				"background": "Run in background"
-			},
-			"quickPanelBehaviorHints": {
-				"foreground": "After send, open the main window on the new chat",
-				"background": "After send, close the panel and keep the chat running in the background"
-			}
+			"resetToDefault": "Will restore to {{shortcut}}"
 		},
 		"models": {
 			"ops": {
@@ -318,7 +262,9 @@
 			},
 			"headersConfigured": "Custom headers included (secrets masked)",
 			"envPlaceholder": "One KEY=VALUE per line; fill secrets here yourself",
-			"headersPlaceholder": "One HeaderName=value per line; fill secrets here yourself"
+			"headersPlaceholder": "One HeaderName=value per line; fill secrets here yourself",
+			"locationGlobal": "Global (all projects)",
+			"locationProject": "This project only: {{path}}"
 		},
 		"skills": {
 			"ops": {
@@ -954,14 +900,43 @@
 		}
 	},
 	"modelSelect": {
+		"info": {
+			"button": "Model details",
+			"source": "Source",
+			"id": "Model ID",
+			"contextWindow": "Context window",
+			"maxOutput": "Max output",
+			"inputModes": "Input",
+			"reasoning": "Reasoning",
+			"reasoningSupported": "Supported",
+			"multiplier": "Pricing",
+			"modality": {
+				"text": "Text",
+				"image": "Image",
+				"audio": "Audio",
+				"video": "Video",
+				"pdf": "PDF"
+			}
+		},
+		"shortcutHint": "Toggle model menu",
+		"moreProviders": "{{count}} more providers",
+		"fewerProviders": "Show fewer providers",
+		"favorites": {
+			"tab": "Favorite models",
+			"empty": "No favorite models yet",
+			"add": "Add to favorites",
+			"remove": "Remove from favorites"
+		},
 		"placeholder": "Select model",
 		"searchPlaceholder": "Search models or providers",
+		"refresh": "Refresh models",
+		"refreshFailed": "Failed to refresh models",
 		"clearSearch": "Clear search",
 		"noResults": "No models found",
 		"noResultsHint": "Try another model name, ID, or provider",
 		"unset": "Not set",
 		"defaultBadge": "Default",
-		"visionBadge": "vision",
+		"visionBadge": "Supports image input",
 		"cloudOnly": "Cloud",
 		"reasoningHeader": "Reasoning",
 		"modelHeader": "Model",
@@ -1000,9 +975,6 @@
 			"theme": "Color theme"
 		},
 		"login": {
-			"title": "Sign in",
-			"subtitle": "Sign in for cloud features and subscription. You can skip and sign in later",
-			"optionalHint": "Optional — tap Next to continue",
 			"signedInTitle": "Signed in",
 			"signedInDesc": "Welcome back, {{name}}",
 			"signedInFallback": "User"
@@ -1031,15 +1003,18 @@
 		"empty": "No matches",
 		"emptyHint": "Try a different keyword",
 		"loading": "Searching sessions",
-		"title": "Command menu",
-		"hintNavigate": "↑↓ Navigate",
-		"hintSelect": "↵ Open",
-		"hintClose": "esc Close",
+		"title": "Launcher",
+		"actionsLabel": "Actions",
+		"newSession": "New session",
+		"hintSelect": "Open",
+		"hintClose": "Close",
 		"overflow": "{{count}} more",
 		"sessionUnavailable": "This session cannot be opened right now",
 		"searchMarketplace": "Search the ability marketplace",
 		"trigger": "Search",
 		"groups": {
+			"activeSessions": "In progress",
+			"recentSessions": "Recently opened",
 			"projects": "Projects",
 			"sessions": "Sessions",
 			"abilities": "Abilities",
@@ -1055,6 +1030,34 @@
 			"claw": "Claw",
 			"project": "Project",
 			"batch": "Batch"
+		},
+		"sessionStatus": {
+			"running": "Running",
+			"waiting": "Waiting for you",
+			"unread": "Just finished"
 		}
+	},
+	"updateDialog": {
+		"close": "Close",
+		"installing": "Restarting…",
+		"retry": "Retry",
+		"viewCurrent": "What's New",
+		"checkingTitle": "Checking for Updates",
+		"checking": "Contacting the update server…",
+		"currentVersion": "Current version {{version}}",
+		"latestTitle": "You're Up to Date",
+		"availableTitle": "Version {{version}} Is Available",
+		"versionChange": "Current {{currentVersion}} → New {{latestVersion}}",
+		"downloadingTitle": "Downloading {{version}}",
+		"downloading": "{{progress}}% downloaded. You can close this window; it keeps downloading in the background.",
+		"readyTitle": "{{version}} Is Ready",
+		"readyMessage": "Version {{latestVersion}} has been downloaded (current {{currentVersion}}). Restart Atrix to apply the update.",
+		"installingTitle": "Installing Update",
+		"errorTitle": "Couldn't Check for Updates",
+		"errorFallback": "Can't reach the update server right now. Please try again later.",
+		"currentTitle": "What's New in Atrix {{version}}",
+		"currentSubtitle": "What this version brings",
+		"currentEmpty": "No release notes for this version.",
+		"updateNow": "Update Now"
 	}
 }

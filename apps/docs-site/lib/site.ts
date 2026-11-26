@@ -3,10 +3,10 @@ import { getDocsMessages, localeConfig, type DocsLanguage } from "./i18n";
 export const DEFAULT_DOCS_SITE_URL = "https://docs.openvetta.com";
 
 export const site = {
-	name: "Vetta",
-	title: "Vetta 文档",
+	name: "Atrix",
+	title: "Atrix 文档",
 	description:
-		"Vetta 把模型、本地文件和本机工具放进同一个桌面 Agent 工作台。本站提供快速开始、实战示例，以及权限、批量、自动化、插件、主题与 SDK 指南。",
+		"Atrix 把模型、本地文件和本机工具放进同一个桌面 Agent 工作台。本站提供快速开始、实战示例，以及权限、批量、自动化、插件、主题与 SDK 指南。",
 	locale: localeConfig.zh.intlLocale,
 	openGraphLocale: localeConfig.zh.openGraphLocale,
 	marketingUrl: "https://www.openvetta.com",
@@ -21,16 +21,16 @@ export const site = {
 
 export const localizedSite = {
 	zh: {
-		title: "Vetta 文档",
+		title: "Atrix 文档",
 		description:
-			"Vetta 把模型、本地文件和本机工具放进同一个桌面 Agent 工作台。本站提供快速开始、实战示例，以及权限、批量、自动化、插件、主题与 SDK 指南。",
+			"Atrix 把模型、本地文件和本机工具放进同一个桌面 Agent 工作台。本站提供快速开始、实战示例，以及权限、批量、自动化、插件、主题与 SDK 指南。",
 		openGraphLocale: localeConfig.zh.openGraphLocale,
 		locale: localeConfig.zh.intlLocale,
 	},
 	en: {
-		title: "Vetta Documentation",
+		title: "Atrix Documentation",
 		description:
-			"Vetta brings models, local files, and machine tools into one desktop Agent workspace. Learn how to get started, build workflows, configure permissions, extend Vetta, and use the SDK.",
+			"Atrix brings models, local files, and machine tools into one desktop Agent workspace. Learn how to get started, build workflows, configure permissions, extend Atrix, and use the SDK.",
 		openGraphLocale: localeConfig.en.openGraphLocale,
 		locale: localeConfig.en.intlLocale,
 	},
@@ -110,7 +110,7 @@ export function getLocalizedSite(language: SiteLanguage = "zh") {
 }
 
 export function getSectionLabel(section: string | undefined, language: SiteLanguage = "zh"): string {
-	return localizedSections[language].labels[section ?? ""] ?? `VETTA / ${getDocsMessages(language).documentation}`;
+	return localizedSections[language].labels[section ?? ""] ?? `ATRIX / ${getDocsMessages(language).documentation}`;
 }
 
 export function getSectionTitle(section: string | undefined, language: SiteLanguage = "zh"): string {

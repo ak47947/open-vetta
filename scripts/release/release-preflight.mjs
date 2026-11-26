@@ -14,27 +14,15 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+	RELEASE_NOTES_PRODUCT_NAME,
+	summarizeReleaseNotes,
+	validateReleaseNotes,
+} from "./release-notes-format.mjs";
 import { desktopVersion, parseReleaseStatus, releaseNotesPath } from "./release-notes.mjs";
 import { classifyBump, latestReleasedVersion, lockfileDesktopVersion } from "./release-version.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const PLACEHOLDER = /\b(TODO|TBD|FIXME)\b|待补|待填|占位/;
-
-/** 发布说明里每个二级标题下的条目数。 */
-export function countSections(text) {
-	const counts = {};
-	let current = null;
-	for (const line of text.split(/\r?\n/)) {
-		const heading = /^## (.+)$/.exec(line);
-		if (heading) {
-			current = heading[1].trim();
-			counts[current] = 0;
-		} else if (current && /^- \S/.test(line)) {
-			counts[current] += 1;
-		}
-	}
-	return counts;
-}
 
 /**
  * @param {object} facts
@@ -54,8 +42,8 @@ export function evaluatePreflight(facts) {
 	if (!facts.notes) {
 		problems.push(`缺少发布说明 ${releaseNotesPath(version)}`);
 	} else {
-		const title = /^# Vetta (.+)$/m.exec(facts.notes)?.[1]?.trim();
-		if (title !== version) problems.push(`发布说明标题是「# Vetta ${title ?? "?"}」，应为「# Vetta ${version}」`);
+		const title = /^# (?:Atrix|Vetta) (.+)$/m.exec(facts.notes)?.[1]?.trim();
+		if (title !== version) problems.push(`发布说明标题是「# ${RELEASE_NOTES_PRODUCT_NAME} ${title ?? "?"}」，应为「# ${RELEASE_NOTES_PRODUCT_NAME} ${version}」`);
 	}
 
 	// 2. 还没发过
@@ -83,22 +71,22 @@ export function evaluatePreflight(facts) {
 	if (facts.treeDiffersFromDev) problems.push(`当前 HEAD 与 dev 的文件内容不一致：\n${facts.treeDiffersFromDev}`);
 	if (facts.dirty) problems.push(`工作区有未提交的改动：\n${facts.dirty}`);
 
-	// 5. 发布说明有内容
-	const sections = facts.notes ? countSections(facts.notes) : {};
-	const total = Object.values(sections).reduce((sum, n) => sum + n, 0);
-	if (facts.notes && total === 0) problems.push("发布说明没有任何条目");
-	if (facts.notes && PLACEHOLDER.test(facts.notes)) problems.push("发布说明里还有占位文字（TODO / TBD / 待补…）");
+	// 5. 发布说明已按双语格式定稿，且 Full Changelog 指向上一版
+	if (facts.notes) {
+		const notesCheck = validateReleaseNotes(facts.notes, {
+			version,
+			previousTag: facts.latestReleased ? `v${facts.latestReleased}` : undefined,
+		});
+		problems.push(...notesCheck.problems);
+		warnings.push(...notesCheck.warnings);
+	}
 
-	const sectionText = Object.entries(sections)
-		.filter(([, n]) => n > 0)
-		.map(([name, n]) => `${name} ${n} 条`)
-		.join(" / ");
 	const bumpText = { patch: "修订号升级", minor: "次版本号升级", major: "主版本号升级", irregular: "跳号", invalid: "版本倒退" }[bump];
 	const summary = [
 		`将发布 ${facts.tag}（${bumpText}，上一个版本 ${facts.latestReleased ? `v${facts.latestReleased}` : "无"}）`,
 		`  tag 指向：${facts.head}`,
 		`  包含提交：${facts.commitCount} 个`,
-		`  发布说明：${sectionText || "（空）"}`,
+		`  发布说明：${facts.notes ? summarizeReleaseNotes(facts.notes) : "（空）"}`,
 		...(facts.pluginChanges.length > 0 ? [`  插件版本：${facts.pluginChanges.join("，")}`] : []),
 	];
 	return { problems, warnings, summary };

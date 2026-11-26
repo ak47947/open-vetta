@@ -3,10 +3,10 @@ import type { MessageAnnotationsApi } from "../shared/message-annotations.js";
 import type { DesktopAbilitiesApi } from "./api-types/abilities.js";
 import type { DesktopActionApprovalApi } from "./api-types/action-approval.js";
 import type { DesktopAgentTeamsApi } from "./api-types/agent-teams.js";
+import type { DesktopAppIconApi } from "./api-types/app-icon.js";
 import type { DesktopAppLifecycleApi } from "./api-types/app-lifecycle.js";
 import type { DesktopAppMonitorApi } from "./api-types/app-monitor.js";
 import type { DesktopAppshotApi } from "./api-types/appshot.js";
-import type { DesktopAuthApi } from "./api-types/auth.js";
 import type { DesktopBatchTasksApi } from "./api-types/batch-tasks.js";
 import type { DesktopConfigApi } from "./api-types/config.js";
 import type { DesktopConversationTagsApi } from "./api-types/conversation-tags.js";
@@ -24,7 +24,6 @@ import type { DesktopNotificationApi } from "./api-types/notification.js";
 import type { DesktopPetApi } from "./api-types/pet.js";
 import type { DesktopPluginsApi } from "./api-types/plugins.js";
 import type { DesktopProjectApi } from "./api-types/project.js";
-import type { DesktopQuickPanelApi } from "./api-types/quick-panel.js";
 import type { RemotePairingApi } from "./api-types/remote-pairing.js";
 import type { DesktopRuntimeConfigurationApi } from "./api-types/runtime-configuration.js";
 import type { DesktopSchedulerApi } from "./api-types/scheduler.js";
@@ -39,7 +38,6 @@ import type {
 	DesktopRuntimesApi,
 	DesktopSettingsApi,
 	DesktopShellApi,
-	DesktopSubscriptionApi,
 	DesktopTrayApi,
 	DesktopWindowApi,
 } from "./api-types/system.js";
@@ -47,6 +45,7 @@ import type { DesktopTelemetryApi } from "./api-types/telemetry.js";
 import type { DesktopTerminalApi } from "./api-types/terminal.js";
 import type { DesktopThemeApi } from "./api-types/theme.js";
 import type { DesktopThemesApi } from "./api-types/themes.js";
+import type { DesktopUiZoomApi } from "./api-types/ui-zoom.js";
 import type { DesktopUpdaterApi } from "./api-types/updater.js";
 import type { DesktopWebhookApi } from "./api-types/webhook.js";
 import type { DesktopFsApi } from "./fs-types.js";
@@ -54,10 +53,10 @@ import type { DesktopFsApi } from "./fs-types.js";
 export type * from "./api-types/abilities.js";
 export type * from "./api-types/action-approval.js";
 export type * from "./api-types/agent-teams.js";
+export type * from "./api-types/app-icon.js";
 export type * from "./api-types/app-lifecycle.js";
 export type * from "./api-types/app-monitor.js";
 export type * from "./api-types/appshot.js";
-export type * from "./api-types/auth.js";
 export type * from "./api-types/batch-tasks.js";
 export type * from "./api-types/config.js";
 export type * from "./api-types/debug.js";
@@ -72,7 +71,6 @@ export type * from "./api-types/notification.js";
 export type * from "./api-types/pet.js";
 export type * from "./api-types/plugins.js";
 export type * from "./api-types/project.js";
-export type * from "./api-types/quick-panel.js";
 export type * from "./api-types/runtime-configuration.js";
 export type * from "./api-types/scheduler.js";
 export type * from "./api-types/session.js";
@@ -85,6 +83,7 @@ export type * from "./api-types/telemetry.js";
 export type * from "./api-types/terminal.js";
 export type * from "./api-types/theme.js";
 export type * from "./api-types/themes.js";
+export type * from "./api-types/ui-zoom.js";
 export type * from "./api-types/updater.js";
 export type * from "./api-types/webhook.js";
 
@@ -109,6 +108,8 @@ export interface DesktopApi {
 	themes: DesktopThemesApi;
 	telemetry: DesktopTelemetryApi;
 	i18n: DesktopI18nApi;
+	uiZoom: DesktopUiZoomApi;
+	appIcon: DesktopAppIconApi;
 	fs: DesktopFsApi;
 	skills: DesktopSkillsApi;
 	config: DesktopConfigApi;
@@ -118,11 +119,9 @@ export interface DesktopApi {
 	mcp: DesktopMcpApi;
 	media: DesktopMediaApi;
 	settings: DesktopSettingsApi;
-	subscription: DesktopSubscriptionApi;
 	shell: DesktopShellApi;
 	clipboard: DesktopClipboardApi;
 	window: DesktopWindowApi;
-	auth: DesktopAuthApi;
 	updater: DesktopUpdaterApi;
 	tray: DesktopTrayApi;
 	scheduler: DesktopSchedulerApi;
@@ -142,7 +141,6 @@ export interface DesktopApi {
 	pet: DesktopPetApi;
 	conversationTags: DesktopConversationTagsApi;
 	sessionPins: DesktopSessionPinsApi;
-	quickPanel: DesktopQuickPanelApi;
 	runtimeConfiguration: DesktopRuntimeConfigurationApi;
 	appshot: DesktopAppshotApi;
 }

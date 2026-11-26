@@ -1,6 +1,5 @@
 /**
  * 全局应用快捷键（设置 → 快捷键 → 全局快捷键）。
- * 与快捷面板（quickPanel）无关：后者是独立域，勿混写。
  */
 
 export interface ShortcutActionDef {
@@ -14,9 +13,23 @@ export interface ShortcutActionDef {
 }
 
 export const FILE_EDITOR_SAVE_EVENT = "vetta:file-editor-save";
+/** 「打开模型选择」快捷键触发后由根布局广播；输入栏里的模型选择器收到就切换开合。 */
+export const OPEN_MODEL_SELECTOR_EVENT = "vetta:open-model-selector";
+
+export const SPACE_SHORTCUT_ACTIONS = ([1, 2, 3, 4, 5, 6, 7, 8, 9] as const).map(
+	(position) =>
+		({
+			id: `switch-space-${position}` as const,
+			labelKey: `shortcutSpace${position}Label` as const,
+			descriptionKey: "shortcutSpaceDesc",
+			defaultShortcut: `ctrl+${position}`,
+			scope: "app",
+		}) as const satisfies ShortcutActionDef,
+);
 
 /** 可配置的全局快捷键动作（白名单）。as const 保留字面量类型。 */
 export const SHORTCUT_ACTIONS = [
+	...SPACE_SHORTCUT_ACTIONS,
 	{
 		id: "new-session",
 		labelKey: "shortcutNewSessionLabel",
@@ -42,7 +55,14 @@ export const SHORTCUT_ACTIONS = [
 		id: "open-command-menu",
 		labelKey: "shortcutOpenCommandMenuLabel",
 		descriptionKey: "shortcutOpenCommandMenuDesc",
-		defaultShortcut: "mod+k",
+		defaultShortcut: "mod+t",
+		scope: "app",
+	},
+	{
+		id: "open-model-selector",
+		labelKey: "shortcutOpenModelSelectorLabel",
+		descriptionKey: "shortcutOpenModelSelectorDesc",
+		defaultShortcut: "mod+p",
 		scope: "app",
 	},
 	{

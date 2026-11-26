@@ -26,6 +26,11 @@
 		}
 	},
 	"markdown": {
+		"fileMissing": "File not found: {{path}}",
+		"openFile": "Open",
+		"revealInFinder": "Reveal in Finder",
+		"revealInExplorer": "Show in Explorer",
+		"revealInFileManager": "Show in File Manager",
 		"preview": "Preview",
 		"source": "Source",
 		"run": "Run in separate window",
@@ -41,6 +46,7 @@
 		"loading": "Preparing preview…",
 		"retry": "Retry",
 		"enlarge": "Enlarge",
+		"copyImage": "Copy image",
 		"save": "Save as",
 		"diagram": "Diagram",
 		"imageFailed": "Could not load image.",
@@ -238,6 +244,7 @@
 		"refresh": "Refresh",
 		"newFile": "New file",
 		"newFolder": "New folder",
+		"newMenu": "New",
 		"collapseAll": "Collapse all",
 		"newFileInputLabel": "Enter a new file name",
 		"newFolderInputLabel": "Enter a new folder name",
@@ -309,6 +316,7 @@
 		"download": "Download file",
 		"showTree": "Show file tree",
 		"hideTree": "Hide file tree",
+		"locate": "Locate in file tree",
 		"previous": "Previous (←)",
 		"next": "Next (→)",
 		"downloadShort": "Download",
@@ -337,10 +345,12 @@
 		"selectPlaceholder": "Select an option"
 	},
 	"atPanel": {
+		"citeDirectory": "Attach folder",
+		"citeDirectoryHint": "Attach this folder ({{shortcut}})",
 		"emptyDirectory": "Empty directory",
 		"enterDirectory": "Tab to enter",
 		"goUp": "..",
-		"header": "Reference file",
+		"header": "Reference a file or folder",
 		"loading": "Loading...",
 		"noResults": "No matches found",
 		"searchResults": "{{count}} results"
@@ -446,7 +456,16 @@
 			"pinned": "Unpin window",
 			"unpinned": "Pin window (keep on top)"
 		},
-		"remoteBadge": "Remote"
+		"remoteBadge": "Remote",
+		"headerActions": {
+			"customize": "Customize header",
+			"topFull": "Header is full",
+			"moveToTop": "Add to header",
+			"moveToTray": "Stow",
+			"adjust": "Rearrange",
+			"done": "Done",
+			"more": "More actions"
+		}
 	},
 	"contextRing": {
 		"tooltip": {
@@ -536,8 +555,7 @@
 	},
 	"guideBadgeSwiper": {
 		"dismissTooltip": "Don't show again",
-		"petFeatureText": "New desktop pet feature — click to enable in settings",
-		"quickPanelText": "Atrix now has a Quick Panel — click to set it up"
+		"petFeatureText": "New desktop pet feature — click to enable in settings"
 	},
 	"imagePreview": {
 		"altText": "Loaded image",
@@ -597,7 +615,7 @@
 				"Paste a screenshot or @ a file to get started"
 			],
 			"noSession": "Select or create a session to start",
-			"suggestion": "↵ {{suggestion}}",
+			"suggestion": "Tab ⇥  {{suggestion}}",
 			"thinking": "Atrix is thinking…"
 		},
 		"mention": {
@@ -860,8 +878,9 @@
 		},
 		"edit": {
 			"pendingHint": "Editing the last message — send to replace the original message and reply",
+			"pendingBranchHint": "Editing an earlier message — send to answer again from here; the later conversation stays as another version",
 			"overwriteDraftTitle": "Overwrite current draft?",
-			"overwriteDraftBody": "The input already has content. Editing the last message will replace your draft.",
+			"overwriteDraftBody": "The input already has content. Editing this message will replace your draft.",
 			"overwriteDraftConfirm": "Overwrite and edit"
 		},
 		"interrupt": {
@@ -891,7 +910,7 @@
 	"modelSelector": {
 		"defaultBadge": "Default",
 		"selectModel": "Select model",
-		"visionBadge": "vision"
+		"visionBadge": "Supports image input"
 	},
 	"newSession": {
 		"greetingDefault": "How's it going today?",
@@ -995,6 +1014,8 @@
 		}
 	},
 	"questionPanel": {
+		"collapse": "Collapse panel",
+		"expand": "Expand panel",
 		"keyboardHint": "↑↓ Navigate · Space select · ←→ Switch · Enter next",
 		"multiSelectHint": "Multiple choice",
 		"otherOption": "Other (custom input)",
@@ -1078,6 +1099,7 @@
 		"emptyNoMatchHint": "Try another keyword, or just type your request.",
 		"emptyNoSkills": "No skills available",
 		"emptyNoSkillsHint": "Install a skill from the ability market to call it here.",
+		"moreActions": "More actions",
 		"header": "Select a skill",
 		"resultCount": "{{count}} results",
 		"skillsSection": "Skills",

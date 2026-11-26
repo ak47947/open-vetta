@@ -1,32 +1,42 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import type { PetActionGalleryViewLabels, PetActionGroupView, PetSizeControlView } from "@vetta-org/theme-ui/settings";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { PetBubbleStyleAsset, PetDecoration } from "../../../../preload/api-types/pet";
-import { PET_BUBBLE_STYLES, type PetBubbleStyleId } from "../../../../shared/pet-bubbles";
-import { DEFAULT_PET_CONFIG, type PetConfig } from "../../../../shared/pet-config";
+import type { PetActionVideo, PetDecoration } from "../../../../preload/api-types/pet";
+import { getPetActionsByGroup, PET_ACTION_GROUPS } from "../../../../shared/pet-actions";
+import {
+	DEFAULT_PET_CONFIG,
+	normalizePetVideoScale,
+	PET_VIDEO_SCALE_MAX,
+	PET_VIDEO_SCALE_MIN,
+	type PetConfig,
+} from "../../../../shared/pet-config";
 import { SETTINGS_SECTION } from "../registry";
 import { recordSettingsUsage } from "./recordSettingsUsage";
 
-export interface PetBubbleStyleModel {
-	decorUrl?: string;
-	description: string;
-	id: PetBubbleStyleId;
-	label: string;
-}
+/** 滑块用 5% 一档；桌宠滚轮缩放仍是细粒度，显示时原样展示。 */
+const PET_SIZE_SLIDER_STEP = 0.05;
+/** 键盘连按方向键时每次都会提交，合并成一次写配置。 */
+const PET_SIZE_PERSIST_DELAY_MS = 200;
 
 export interface PetSettingsModel {
 	actions: {
 		changeAlwaysOnTop: (checked: boolean) => void;
-		changeBubbleStyle: (value: string) => void;
+		changeAutoMode: (checked: boolean) => void;
 		changeDebugFrame: (checked: boolean) => void;
 		changeEnabled: (checked: boolean) => void;
+		playAction: (actionId: string) => void;
 	};
-	bubbleStyles: PetBubbleStyleModel[];
+	actionGroups: PetActionGroupView[];
+	actionLabels: PetActionGalleryViewLabels;
 	config: PetConfig;
 	decorations: PetDecoration[];
+	size: PetSizeControlView;
 	labels: {
+		actionsSectionDescription: string;
 		alwaysOnTop: string;
 		alwaysOnTopDescription: string;
-		bubbleSectionDescription: string;
+		autoMode: string;
+		autoModeDescription: string;
 		debugFrame: string;
 		debugFrameDescription: string;
 		decorationAvailable: string;
@@ -36,13 +46,16 @@ export interface PetSettingsModel {
 		materialMissing: string;
 		pageTitle: string;
 		sections: {
-			bubble: string;
+			actions: string;
+			behavior: string;
 			decoration: string;
 			developer: string;
 			display: string;
 		};
 		showPet: string;
 		showPetDescription: string;
+		size: string;
+		sizeDescription: string;
 	};
 }
 
@@ -51,7 +64,8 @@ export function usePetSettingsModel(): PetSettingsModel {
 	const { t: tSettings } = useTranslation("settings");
 	const [config, setConfig] = useState<PetConfig>(DEFAULT_PET_CONFIG);
 	const [decorations, setDecorations] = useState<PetDecoration[]>([]);
-	const [bubbleStyleAssets, setBubbleStyleAssets] = useState<PetBubbleStyleAsset[]>([]);
+	const [actionVideos, setActionVideos] = useState<PetActionVideo[]>([]);
+	const sizeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
 	useEffect(() => {
 		let disposed = false;
@@ -63,13 +77,16 @@ export function usePetSettingsModel(): PetSettingsModel {
 		void window.vetta.pet.getConfig().then((next) => {
 			if (!disposed && !receivedConfigEvent) setConfig(next);
 		});
-		void window.vetta.pet.getDecorations().then(setDecorations);
-		void window.vetta.pet.getBubbleStyleAssets().then((next) => {
-			setBubbleStyleAssets(next);
+		void window.vetta.pet.getDecorations().then((next) => {
+			if (!disposed) setDecorations(next);
+		});
+		void window.vetta.pet.getActionVideos().then((next) => {
+			if (!disposed) setActionVideos(next);
 		});
 		return () => {
 			disposed = true;
 			unsubscribe();
+			clearTimeout(sizeTimerRef.current);
 		};
 	}, []);
 
@@ -94,6 +111,14 @@ export function usePetSettingsModel(): PetSettingsModel {
 		[persist],
 	);
 
+	const handleAutoMode = useCallback(
+		(checked: boolean) => {
+			void persist({ autoMode: checked });
+			recordSettingsUsage({ tab: "pet", action: checked ? "enabled" : "disabled", target: "auto-mode" });
+		},
+		[persist],
+	);
+
 	const handleDebugFrame = useCallback(
 		(checked: boolean) => {
 			void persist({ debugFrame: checked });
@@ -102,23 +127,58 @@ export function usePetSettingsModel(): PetSettingsModel {
 		[persist],
 	);
 
-	const handleBubbleStyle = useCallback(
-		(value: string) => {
-			void persist({ bubbleStyleId: value as PetBubbleStyleId });
-			recordSettingsUsage({ tab: "pet", action: "selected", target: "bubble-style", value });
+	const handleSizeCommit = useCallback(
+		(value: number) => {
+			const videoScale = normalizePetVideoScale(value);
+			setConfig((current) => ({ ...current, videoScale }));
+			clearTimeout(sizeTimerRef.current);
+			sizeTimerRef.current = setTimeout(() => {
+				void persist({ videoScale });
+				recordSettingsUsage({ tab: "pet", action: "changed", target: "size", value: String(videoScale) });
+			}, PET_SIZE_PERSIST_DELAY_MS);
 		},
 		[persist],
 	);
 
-	const bubbleStyles = useMemo<PetBubbleStyleModel[]>(
-		() =>
-			PET_BUBBLE_STYLES.map((style) => ({
-				id: style.id,
-				decorUrl: bubbleStyleAssets.find((asset) => asset.id === style.id)?.url,
-				description: t(style.descriptionKey),
-				label: t(style.labelKey),
+	const handlePlayAction = useCallback((actionId: string) => {
+		void window.vetta.pet.setAction(actionId);
+		recordSettingsUsage({ tab: "pet", action: "selected", target: "action", value: actionId });
+	}, []);
+
+	const actionGroups = useMemo<PetActionGroupView[]>(() => {
+		const videoUrlById = new Map(actionVideos.map((video) => [video.id, video.url]));
+		return PET_ACTION_GROUPS.map((group) => ({
+			id: group.id,
+			label: t(`settings.actions.groups.${group.id}`),
+			actions: getPetActionsByGroup(group.id).map((action) => ({
+				id: action.id,
+				label: t(`settings.actions.items.${action.id}.label`),
+				description: t(`settings.actions.items.${action.id}.description`),
+				videoUrl: videoUrlById.get(action.id),
 			})),
-		[bubbleStyleAssets, t],
+		}));
+	}, [actionVideos, t]);
+
+	const actionLabels = useMemo<PetActionGalleryViewLabels>(
+		() => ({
+			needShowPet: t("settings.actions.needShowPet"),
+			play: t("settings.actions.play"),
+			played: t("settings.actions.played"),
+			previewHint: t("settings.actions.previewHint"),
+			videoMissing: t("settings.actions.videoMissing"),
+		}),
+		[t],
+	);
+
+	const size = useMemo<PetSizeControlView>(
+		() => ({
+			value: config.videoScale,
+			min: PET_VIDEO_SCALE_MIN,
+			max: PET_VIDEO_SCALE_MAX,
+			step: PET_SIZE_SLIDER_STEP,
+			onCommit: handleSizeCommit,
+		}),
+		[config.videoScale, handleSizeCommit],
 	);
 
 	const localizedDecorations = useMemo(
@@ -132,9 +192,11 @@ export function usePetSettingsModel(): PetSettingsModel {
 
 	const labels = useMemo(
 		() => ({
+			actionsSectionDescription: t("settings.actions.sectionDescription"),
 			alwaysOnTop: t("settings.alwaysOnTop"),
 			alwaysOnTopDescription: t("settings.alwaysOnTopDesc"),
-			bubbleSectionDescription: t("settings.bubble.sectionDescription"),
+			autoMode: t("settings.autoMode"),
+			autoModeDescription: t("settings.autoModeDesc"),
 			debugFrame: t("settings.debugFrame"),
 			debugFrameDescription: t("settings.debugFrameDesc"),
 			decorationAvailable: t("settings.decoration.available"),
@@ -144,13 +206,16 @@ export function usePetSettingsModel(): PetSettingsModel {
 			materialMissing: t("settings.decoration.materialMissing"),
 			pageTitle: t("settings.pageTitle"),
 			sections: {
-				bubble: tSettings(SETTINGS_SECTION["pet-bubble"].titleKey),
+				actions: tSettings(SETTINGS_SECTION["pet-actions"].titleKey),
+				behavior: tSettings(SETTINGS_SECTION["pet-behavior"].titleKey),
 				decoration: tSettings(SETTINGS_SECTION["pet-decoration"].titleKey),
 				developer: tSettings(SETTINGS_SECTION["pet-developer"].titleKey),
 				display: tSettings(SETTINGS_SECTION["pet-display"].titleKey),
 			},
 			showPet: t("settings.showPet"),
 			showPetDescription: t("settings.showPetDesc"),
+			size: t("settings.size"),
+			sizeDescription: t("settings.sizeDesc"),
 		}),
 		[t, tSettings],
 	);
@@ -158,13 +223,16 @@ export function usePetSettingsModel(): PetSettingsModel {
 	return {
 		actions: {
 			changeAlwaysOnTop: handleAlwaysOnTop,
-			changeBubbleStyle: handleBubbleStyle,
+			changeAutoMode: handleAutoMode,
 			changeDebugFrame: handleDebugFrame,
 			changeEnabled: handleEnabled,
+			playAction: handlePlayAction,
 		},
-		bubbleStyles,
+		actionGroups,
+		actionLabels,
 		config,
 		decorations: localizedDecorations,
 		labels,
+		size,
 	};
 }

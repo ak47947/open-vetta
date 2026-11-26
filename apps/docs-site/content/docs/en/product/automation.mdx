@@ -3,7 +3,7 @@ title: Create an automation
 description: Give a manually verified task to the local scheduler and run it once, daily, or at an interval while checking execution history.
 ---
 
-Automation is for stable, repeatable tasks that do not need to be re-explained every time. Scheduling happens in the desktop client: a fully exited Vetta, a sleeping computer, or a shut-down computer cannot run the schedule.
+Automation is for stable, repeatable tasks that do not need to be re-explained every time. Scheduling happens in the desktop client: a fully exited Atrix, a sleeping computer, or a shut-down computer cannot run the schedule.
 
 ## Verify manually first
 
@@ -76,18 +76,22 @@ Task details include execution history with success, failure, running, and abort
 
 The activity panel also shows project-level automation summaries, today's executions, enabled tasks, and recent records.
 
+## Send results to Claw
+
+Turn on **Send via Claw** under the task's **Notification** section. After each successful or failed run, the result goes to the current Claw channel's result chat; aborted runs send nothing. The first private chat with the bot becomes the result chat, and later messages from other people don't change it. To send results somewhere else, including a group, send `/notify` in that chat. Claw settings show whether a result chat is set and let you clear it. Each channel keeps its own result chat, and disconnecting a channel clears it. When a result is not sent, the reason appears in execution history and the run status is unchanged.
+
 ## Common failures
 
 | Symptom | Check |
 | --- | --- |
-| Nothing runs at the scheduled time | Vetta is running, the device is awake, the task is enabled, and the time zone has not changed |
+| Nothing runs at the scheduled time | Atrix is running, the device is awake, the task is enabled, and the time zone has not changed |
 | Model call fails | The model and credentials still work and no quota or rate limit was reached |
 | A file cannot be found | The project did not move and the relative path in the prompt still resolves |
 | Stuck on permission confirmation | The task does not require an interactive high-risk action |
 | Success but no artifact | The prompt requires a real artifact and verification instead of relying only on the final reply |
 
 <Callout type="info" title="Automation is not a resident cloud service">
-  Scheduling currently depends on a running Vetta desktop client. Do not treat desktop automation as an equivalent to a cross-device resident service or server-side SLA.
+  Scheduling currently depends on a running Atrix desktop client. Do not treat desktop automation as an equivalent to a cross-device resident service or server-side SLA.
 </Callout>
 
 For a complete recipe, see [Generate a scheduled project report](/examples/scheduled-project-report/). To run one prompt across several directories, use [Batch tasks](/product/batch-tasks/).

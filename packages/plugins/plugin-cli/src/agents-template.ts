@@ -1,10 +1,10 @@
 /**
  * 随脚手架落地的 Agent 说明书。
  *
- * 它替代的是「把开发知识写死在工作台插件的 skill 里」那套做法：那份 skill 只有 Vetta
+ * 它替代的是「把开发知识写死在工作台插件的 skill 里」那套做法：那份 skill 只有 Atrix
  * 自己的 Agent 读得到，而且每加一个能力就要改一次、还要等 App 发版才到用户手里。这里
  * 反过来——工程自带说明书，说明书只说「去哪读手册」，手册随 SDK 版本进 node_modules。
- * 因此任何 Agent（Claude Code、Cursor、Vetta 自己）在任何陌生目录都能自举，而且读到的
+ * 因此任何 Agent（Claude Code、Cursor、Atrix 自己）在任何陌生目录都能自举，而且读到的
  * 永远是这个工程实际编译所针对的那份合同。
  *
  * **这里刻意只留指引，不留知识。** 写进这个文件的每一条规则都会在所有存量工程里就地凝固：
@@ -39,11 +39,11 @@ function renderCommands(pluginId: string, scripts: readonly string[]): string {
 	const known: readonly (readonly [string, string])[] = [
 		["dev", "npm run dev            # 开发服务器"],
 		["build", "npm run build          # 产出 dist/"],
-		["install:vetta", "npm run install:vetta  # 打包并装进正在运行的 Vetta（需要 Vetta 已启动）"],
+		["install:vetta", "npm run install:vetta  # 打包并装进正在运行的 Atrix（需要 Atrix 已启动）"],
 	];
 	const lines = known.filter(([name]) => scripts.includes(name)).map(([, line]) => line);
 	if (!scripts.includes("install:vetta")) {
-		lines.push("npx vetta-plugin-cli add .       # 打包并装进正在运行的 Vetta");
+		lines.push("npx vetta-plugin-cli add .       # 打包并装进正在运行的 Atrix");
 	}
 	return [
 		...lines,
@@ -64,7 +64,7 @@ export function renderAgentsGuide(input: {
 	return `<!-- vetta-guide-revision: ${AGENTS_GUIDE_REVISION} -->
 # ${input.displayName}
 
-Vetta 桌面插件工程（插件 id：\`${input.pluginId}\`）。
+Atrix 桌面插件工程（插件 id：\`${input.pluginId}\`）。
 
 **本文件不讲规则，只告诉你去哪读。** 规则在手册里，手册随 SDK 升级；写在这里的任何一条都会
 停在这个工程创建那天。两者冲突时一律以手册为准。

@@ -9,10 +9,9 @@ import {
 	isSupportedLanguage,
 	type LanguagePreference,
 } from "@/shared/i18n/config";
-import { type CursorStyle, getStoredCursorStyle } from "../theme/cursor";
+import { type ChatBackgroundId, getStoredChatBackgroundId } from "../theme/chat-background";
 import { getStoredNewSessionTextureId, type NewSessionTextureId } from "../theme/new-session-texture";
 import { getStoredOrnamentId, type OrnamentId } from "../theme/ornament";
-import { getStoredSidebarStyle, type SidebarStyle } from "../theme/sidebar-style";
 
 // ─── i18n ───
 // 初值取主进程同步暴露的语言状态（preference + 解析后 language）。
@@ -41,17 +40,25 @@ export const pageHeaderTitleAtom = atom<string | null>(null);
 export const pageHeaderRightSlotAtom = atom<ReactNode | null>(null);
 /** 顶栏左侧（侧边栏触发按钮之后、标题之前）的自定义插槽，如设置页的返回按钮。 */
 export const pageHeaderLeftSlotAtom = atom<ReactNode | null>(null);
+/** 顶栏左侧与「展开侧边栏」按钮合成一个按钮组的动作（会话页的新会话）；侧边栏展开时不显示。 */
+export const pageHeaderLeftActionsAtom = atom<ReactNode | null>(null);
 /** 紧贴顶栏标题 label 右侧的徽标插槽（如知识库「正在建立索引…」）。 */
 export const pageHeaderTitleBadgeAtom = atom<ReactNode | null>(null);
 // 设为 true 时彻底隐藏顶栏标题（连路由兜底标题也不显示），用于 NewSessionPage 等。
 export const pageHeaderTitleHiddenAtom = atom<boolean>(false);
+/**
+ * 设为 true 时顶栏浮在页面内容之上（沉浸式 / soft titlebar）：内容占满全高，
+ * 自己负责顶部留白与滚动时的渐隐。由会话页挂载期间置位，卸载时复位。
+ */
+export const pageHeaderImmersiveAtom = atom<boolean>(false);
 
 // ─── Settings page ───
 
 export type SettingsTab =
+	| "usage"
 	| "general"
+	| "launcher"
 	| "appearance"
-	| "account"
 	| "models"
 	| "mcp"
 	| "environment"
@@ -61,8 +68,8 @@ export type SettingsTab =
 	| "webhook"
 	| "shortcuts"
 	| "appshot"
+	| "spaces"
 	| "archive"
-	| "team"
 	| "context"
 	| "knowledge"
 	| "pet"
@@ -77,16 +84,15 @@ export const resolvedThemeAtom = atom<"light" | "dark">("light");
 export const themeNameAtom = atom<string>(
 	resolveThemeId(localStorage.getItem("vetta-color-theme") || DEFAULT_THEME_ID),
 );
-export type { CursorStyle };
-export const cursorStyleAtom = atom<CursorStyle>(getStoredCursorStyle());
-export type { SidebarStyle };
-export const sidebarStyleAtom = atom<SidebarStyle>(getStoredSidebarStyle());
 export type { OrnamentId };
 /** 新会话页装饰件位当前挂着谁。 */
 export const heroOrnamentAtom = atom<OrnamentId>(getStoredOrnamentId());
 export type { NewSessionTextureId };
 /** 新会话页背后当前铺着哪层纹理。 */
 export const newSessionTextureAtom = atom<NewSessionTextureId>(getStoredNewSessionTextureId());
+export type { ChatBackgroundId };
+/** 对话页背后当前铺着哪档聊天背景。 */
+export const chatBackgroundAtom = atom<ChatBackgroundId>(getStoredChatBackgroundId());
 
 // ─── Confirm dialog ───
 
@@ -122,7 +128,7 @@ export interface SandboxPermissionDrawerState {
 export const sandboxPermissionDrawerAtom = atom<SandboxPermissionDrawerState | null>(null);
 
 /**
- * 全局 Command Menu（⌘K）的开合。放 atom 而非组件内部 state：唤起点有两个
+ * 全局 Command Menu（⌘T）的开合。放 atom 而非组件内部 state：唤起点有两个
  * ——全局快捷键与侧栏顶部的入口按钮，而面板本身挂在 RootGlobalOverlays 下。
  */
 export const commandMenuOpenAtom = atom<boolean>(false);

@@ -68,6 +68,9 @@ const goalTests = {
 	],
 };
 const EXPLICIT_SOURCE_TESTS = new Map([
+	["apps/docs-site/public/favicon.png", docsMetadataTests],
+	["apps/docs-site/public/images/atrix-app-icon.png", docsBrandAssetTests],
+	// 已退役的旧品牌资源：删除它们时仍应跑到替代资产的合同测试。
 	["apps/docs-site/public/favicon.svg", docsMetadataTests],
 	["apps/docs-site/public/images/vetta-app-icon.webp", docsBrandAssetTests],
 	["apps/docs-site/components/brand-mark.tsx", docsBrandAssetTests],
@@ -75,7 +78,42 @@ const EXPLICIT_SOURCE_TESTS = new Map([
 	["apps/docs-site/components/studio-banner.tsx", docsBrandAssetTests],
 	["apps/docs-site/lib/seo/metadata.ts", docsMetadataTests],
 	["apps/docs-site/lib/site.ts", docsMetadataTests],
+	[
+		"packages/theme-ui/src/project/SidebarProjectDisclosure.tsx",
+		desktopTests("src/renderer/domains/project/components/sidebar/projects/panel/ProjectsPanel.test.tsx"),
+	],
+	// Real Electron geometry covers the shared shell together with desktop's macOS background rules.
+	...[
+		"packages/theme-ui/src/layout/AppFrame.tsx",
+		"apps/desktop/src/renderer/styles.css",
+		"apps/desktop/e2e/fixtures/app-frame-layout.tsx",
+		"apps/desktop/scripts/app-frame-layout.node-test.mjs",
+	].map((source) => [source, desktopTests("src/renderer/root-layout/AppFrame.layout.test.ts")]),
 	["apps/desktop/src/renderer/remote-desktop-host.ts", desktopTests("src/renderer/remote-desktop-host.test.ts")],
+	// 宿主向插件转发的导出清单是手写字符串：漏列会让插件在 load-definition 阶段整份失败
+	// （0.6.9 的 Git 面板即如此），由契约测试比对清单与真实导出的全集。
+	[
+		"apps/desktop/src/main/plugins/plugin-protocol.ts",
+		desktopTests("src/main/plugins/plugin-protocol-contract.test.ts"),
+	],
+	// `edit` 的锚点模式由内容定位取代（ADR-0157）：这两个源文件与其测试已删除，行为由新测试覆盖。
+	...[
+		"packages/runtime-node/src/coding/shared/anchors.ts",
+		"packages/runtime-node/test/coding-suite/shared/anchors.test.ts",
+	].map((source) => [
+		source,
+		{ workspaceKey: "runtime-node", tests: ["test/coding-suite/shared/numbered-lines.test.ts"] },
+	]),
+	...[
+		"packages/runtime-node/src/coding/tools/edit/anchor-edit.ts",
+		"packages/runtime-node/test/coding-suite/edit/edit-anchors.test.ts",
+	].map((source) => [
+		source,
+		{
+			workspaceKey: "runtime-node",
+			tests: ["test/coding-suite/edit/edit-block.test.ts", "test/coding-suite/edit/edit-runtime-contract.test.ts"],
+		},
+	]),
 	[
 		"packages/ai/src/providers/google-stream/request.ts",
 		{ workspaceKey: "ai", tests: ["test/google-native-adapters.test.ts"] },
@@ -93,6 +131,7 @@ const EXPLICIT_SOURCE_TESTS = new Map([
 	],
 	["packages/ui/src/dropdown-menu.tsx", desktopTests(MODEL_SELECTOR_VIEW_TEST)],
 	["packages/theme-ui/src/chat/ModelSelectorView.tsx", desktopTests(MODEL_SELECTOR_VIEW_TEST)],
+	["packages/theme-ui/src/chat/index.ts", desktopTests(MODEL_SELECTOR_VIEW_TEST)],
 	["packages/theme-ui/src/chat/ModelConfiguration.tsx", desktopTests(TEAM_MODEL_SELECTOR_TEST)],
 	["packages/theme-ui/src/chat/InlineModelPicker.tsx", desktopTests(TEAM_MODEL_SELECTOR_TEST)],
 	["packages/theme-ui/src/chat/ReasoningStepSlider.tsx", desktopTests(TEAM_MODEL_SELECTOR_TEST)],

@@ -8,6 +8,59 @@
 		"developerDesc": "用于分辨桌宠窗口边界和视频实际显示区域。",
 		"debugFrame": "调试边框",
 		"debugFrameDesc": "显示窗口边界、视频区域边界，并在桌宠窗口内实时展示窗口大小和视频大小。",
+		"size": "大小",
+		"sizeDesc": "调整 Vivi 在桌面上的大小。也可以在 Vivi 身上滚动滚轮微调。",
+		"autoMode": "自动切换动作",
+		"autoModeDesc": "根据时间和会话状态自己换动作；关闭后保持你选的动作。",
+		"actions": {
+			"sectionDescription": "悬停预览动作，点「播放」让桌面上的 Vivi 做一遍。",
+			"play": "播放",
+			"played": "已开始",
+			"previewHint": "悬停右侧动作预览",
+			"needShowPet": "打开「显示桌宠」后才能播放",
+			"videoMissing": "缺少动画素材",
+			"groups": {
+				"idle": "待机",
+				"working": "工作",
+				"resting": "休息",
+				"feedback": "反馈"
+			},
+			"items": {
+				"stoat_sleep_lie_on_cushion": {
+					"label": "睡觉",
+					"description": "长时间空闲或深夜时趴在软垫上睡觉。"
+				},
+				"stoat_stand_lift_barbell_one_hand_fast": {
+					"label": "举杠铃",
+					"description": "任务完成或短暂休息时的积极反馈。"
+				},
+				"stoat_work_laptop_typing_desk_cushion": {
+					"label": "敲键盘",
+					"description": "你在写代码、应用处于活跃状态时陪你一起忙。"
+				},
+				"stoat_listen_music_headphones_nod": {
+					"label": "听音乐",
+					"description": "晚间或放松时戴着耳机点头。"
+				},
+				"stoat_spin_color_hula_hoop": {
+					"label": "转呼啦圈",
+					"description": "普通待机里的活泼动作。"
+				},
+				"stoat_skip_rope_jump": {
+					"label": "跳绳",
+					"description": "久坐时提醒你起来活动一下。"
+				},
+				"stoat_sit_cushion_drink_tea_slow": {
+					"label": "喝茶",
+					"description": "等待模型回复或低强度待机时慢慢喝茶。"
+				},
+				"stoat_wave_backflip_smoke_fade_exit": {
+					"label": "再见",
+					"description": "挥手后空翻，化作一缕烟消失。"
+				}
+			}
+		},
+
 		"decoration": {
 			"sectionDescription": "当前仅展示可用的装饰素材，后续可接入实际装饰逻辑。",
 			"materialMissing": "素材缺失",
@@ -21,106 +74,10 @@
 				"peekingMonitor": "探出显示器",
 				"dragonBoat": "端午装饰"
 			}
-		},
-		"bubble": {
-			"sectionDescription": "选择桌宠对话气泡样式。不同样式可以拥有独立背景、尺寸和装饰位置。",
-			"styleTitle": "气泡样式",
-			"styleDescription": "选择后会立即应用到桌宠窗口。",
-			"styles": {
-				"plain": {
-					"label": "普通气泡",
-					"description": "跟随应用主题变化的基础气泡。"
-				},
-				"springFestival": {
-					"label": "春节气泡",
-					"description": "暖红背景，使用春节四角装饰。"
-				},
-				"dragonBoat": {
-					"label": "端午气泡",
-					"description": "青绿色背景，使用端午四角装饰。"
-				},
-				"midAutumn": {
-					"label": "中秋气泡",
-					"description": "月黄色背景，使用中秋四角装饰。"
-				},
-				"qingming": {
-					"label": "清明气泡",
-					"description": "浅绿色背景，使用清明四角装饰。"
-				},
-				"winterSolstice": {
-					"label": "冬至气泡",
-					"description": "冰蓝色背景，使用冬至四角装饰。"
-				},
-				"aprilFools": {
-					"label": "愚人节气泡",
-					"description": "浅紫色背景，使用愚人节四角装饰。"
-				},
-				"childrenDay": {
-					"label": "儿童节气泡",
-					"description": "明黄色背景，使用儿童节四角装饰。"
-				},
-				"christmas": {
-					"label": "圣诞气泡",
-					"description": "浅绿色背景，使用圣诞四角装饰。"
-				},
-				"halloween": {
-					"label": "万圣节气泡",
-					"description": "暖橙色背景，使用万圣节四角装饰。"
-				},
-				"laborDay": {
-					"label": "劳动节气泡",
-					"description": "暖橘色背景，使用劳动节四角装饰。"
-				},
-				"nationalDay": {
-					"label": "国庆气泡",
-					"description": "暖红色背景，使用国庆四角装饰。"
-				},
-				"songkran": {
-					"label": "宋干节气泡",
-					"description": "浅蓝色背景，使用宋干节四角装饰。"
-				},
-				"valentineDay": {
-					"label": "情人节气泡",
-					"description": "浅粉色背景，使用情人节四角装饰。"
-				}
-			}
 		}
 	},
 	"video": {
 		"missingTitle": "桌宠视频",
 		"missingSubtitle": "未提供"
-	},
-	"notice": {
-		"lifecycle": {
-			"started": "我来处理这个",
-			"resumed": "我继续处理",
-			"completed": "搞定了",
-			"paused": "已暂停，等你继续"
-		},
-		"waiting": {
-			"question": "有个问题需要你回答",
-			"planReview": "计划准备好了，等你确认",
-			"mcp": "需要你确认外部服务的请求",
-			"permission": "需要你确认这次权限"
-		},
-		"context": {
-			"compacting": "我整理一下上下文"
-		},
-		"tool": {
-			"running": "正在执行工具",
-			"runningWithDescription": "{{description}}",
-			"completed": "工具执行完成"
-		},
-		"retry": {
-			"running": "正在重试第 {{attempt}}/{{maxAttempts}} 次"
-		},
-		"background": {
-			"running": "后台任务运行中",
-			"completed": "后台任务已完成",
-			"failed": "后台任务遇到问题"
-		},
-		"error": {
-			"generic": "这一步遇到问题了"
-		}
 	}
 }

@@ -150,6 +150,25 @@ describe("DefaultSessionRowView leading icon", () => {
 		);
 	});
 
+	it("等你处理时左侧换成停转的琥珀色问号，压过运行与排期状态", () => {
+		const view = render(
+			<DefaultSessionRowView
+				{...props({ tagColors: ["amber"], running: true, scheduled: true, waiting: true })}
+			/>,
+		);
+
+		const icons = view.container.querySelectorAll('[data-session-leading-icon="true"]');
+		expect(icons).toHaveLength(1);
+		const icon = icons[0] as HTMLElement;
+		expect(icon.getAttribute("data-session-waiting")).toBe("true");
+		expect(icon.className).toContain("icon-[solar--question-circle-bold]");
+		expect(icon.className).toContain("text-amber-500");
+		// 停转：等待期间不再画旋转，否则「在忙」与「在等你」两种信号会同时存在。
+		expect(icon.className).not.toContain("animate-spin");
+		// 标签色点让位给等待信号。
+		expect(view.container.textContent).toBe("Conversation");
+	});
+
 	it("shows three members directly and overlays the remaining count on the third avatar", () => {
 		const threeAvatars = Array.from({ length: 3 }, (_, index) => `/avatar-${index}.webp`);
 		const view = render(<DefaultSessionRowView {...props({ trailingAvatarUrls: threeAvatars })} />);
@@ -175,9 +194,7 @@ describe("DefaultSessionRowView leading icon", () => {
 		expect(stack?.querySelectorAll("img")).toHaveLength(3);
 		expect(stack?.textContent).toBe("+29");
 		expect(stack?.querySelector('[data-avatar-overflow="29"]')).not.toBeNull();
-		expect(view.container.querySelector('[data-session-leading-icon="true"]')?.className).toContain(
-			"icon-[solar--chat-round-line-linear]",
-		);
+		expect(view.container.querySelector('[data-session-leading-icon="true"]')).toBeNull();
 	});
 
 	it("falls back to the source icon when no avatars are available", () => {
@@ -314,7 +331,7 @@ describe("SessionRowView Team identity", () => {
 		expect(onOpenContextMenu).toHaveBeenCalledOnce();
 	});
 
-	it("keeps the ordinary status icon inside the row-owned project indentation", () => {
+	it("keeps project indentation without displaying an idle placeholder", () => {
 		const view = render(
 			<SessionRowView
 				active={false}
@@ -329,10 +346,10 @@ describe("SessionRowView Team identity", () => {
 			/>,
 		);
 
-		expect(view.getAllByRole("button")[0]?.className).toContain("pl-[30px]");
-		expect(view.container.querySelector('[data-session-leading-icon="true"]')?.className).not.toContain(
-			"ml-[20px]",
+		expect(view.getByRole("button", { name: "Conversation" }).className).toContain(
+			"grid-cols-[34px_minmax(0,1fr)]",
 		);
+		expect(view.container.querySelector('[data-session-leading-icon="true"]')).toBeNull();
 	});
 
 	it("renders the Agent Team icon before the task title and member avatars at the trailing edge", () => {
@@ -353,7 +370,6 @@ describe("SessionRowView Team identity", () => {
 		);
 
 		expect(view.getByText("Review deployment plan")).toBeTruthy();
-		expect(view.getAllByRole("button")[0]?.className).toContain("pl-[30px]");
 		expect(view.queryByText("Dev Team")).toBeNull();
 		expect(view.queryByText("now")).toBeNull();
 		expect(view.container.querySelector('[data-session-leading-icon="true"]')?.className).toContain(

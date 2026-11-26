@@ -218,7 +218,8 @@ describe("useTeamChatModel streaming flow", () => {
 		await waitFor(() => expect(result.current.model.pendingLabel).toBe("chat.waitingModel"));
 
 		act(() => streamListener?.(streamEvent(1, "partial", requestId)));
-		expect(result.current.model.pendingLabel).toBeUndefined();
+		// Token deltas reach React on the next stream flush.
+		await waitFor(() => expect(result.current.model.pendingLabel).toBeUndefined());
 
 		await act(async () => {
 			resolveSend?.(baseSnapshot);
@@ -318,6 +319,30 @@ describe("useTeamChatModel streaming flow", () => {
 		expect(result.current.model.sessions).toContainEqual({ id: baseSession.id, label: "Review deployment plan" });
 	});
 
+	it("publishes a burst of token deltas to React once per stream flush", async () => {
+		const feedSnapshots = new Set<unknown>();
+		const { result } = renderHook(() => {
+			const value = useTeamChatModel(team.id);
+			feedSnapshots.add(value.model.feedItems);
+			return value;
+		});
+		await waitFor(() => expect(result.current.model.status).toBe("ready"));
+		await waitFor(() => expect(streamListener).toBeTypeOf("function"));
+		const before = feedSnapshots.size;
+
+		// Separate acts, as separate IPC messages are; React would batch one act on its own.
+		for (let sequence = 1; sequence <= 30; sequence++) {
+			act(() => streamListener?.(streamEvent(sequence, "x")));
+		}
+		await waitFor(() =>
+			expect(result.current.model.feedItems).toEqual([
+				expect.objectContaining({ blocks: [expect.objectContaining({ text: "x".repeat(30) })] }),
+			]),
+		);
+		// The first delta publishes at once and the rest of the burst in one trailing flush.
+		expect(feedSnapshots.size - before).toBeLessThanOrEqual(2);
+	});
+
 	it("shows ordered partial text and keeps the persisted final result after the stream closes", async () => {
 		const { result } = renderHook(() => useTeamChatModel(team.id));
 		await waitFor(() => expect(result.current.model.status).toBe("ready"));
@@ -329,14 +354,16 @@ describe("useTeamChatModel streaming flow", () => {
 		});
 
 		expect(result.current.model.status).toBe("streaming");
+		await waitFor(() =>
+			expect(result.current.model.feedItems).toEqual([
+				expect.objectContaining({
+					kind: "agent",
+					phase: "streaming",
+					blocks: [expect.objectContaining({ type: "text", text: "partial answer" })],
+				}),
+			]),
+		);
 		expect(result.current.model.members.find((member) => member.id === leader.id)?.status).toBe("working");
-		expect(result.current.model.feedItems).toEqual([
-			expect.objectContaining({
-				kind: "agent",
-				phase: "streaming",
-				blocks: [expect.objectContaining({ type: "text", text: "partial answer" })],
-			}),
-		]);
 
 		const finalSession: TeamSessionDocument = {
 			...baseSession,
@@ -606,7 +633,9 @@ describe("useTeamChatModel streaming flow", () => {
 		expect(result.current.model.members.find((member) => member.id === leader.id)?.status).toBe("error");
 
 		act(() => streamListener?.(streamEvent(3, "retry")));
-		expect(result.current.model.members.find((member) => member.id === leader.id)?.status).toBe("working");
+		await waitFor(() =>
+			expect(result.current.model.members.find((member) => member.id === leader.id)?.status).toBe("working"),
+		);
 	});
 
 	it("keeps attachment tokens and structured request data in sync", async () => {
@@ -1431,13 +1460,48 @@ describe("useTeamChatModel streaming flow", () => {
 
 		act(() => streamListener?.(streamEvent(1, "second answer")));
 		await waitFor(() => expect(result.current.model.status).toBe("streaming"));
-		expect(
-			result.current.model.feedItems.some((item) => item.kind === "agent" && item.phase === "streaming"),
-		).toBe(true);
+		await waitFor(() =>
+			expect(
+				result.current.model.feedItems.some((item) => item.kind === "agent" && item.phase === "streaming"),
+			).toBe(true),
+		);
 		resolveRetry?.(baseSnapshot);
 		await act(async () => {
 			await retry;
 		});
+	});
+
+	it("keeps the switched model when a late update still carries the previous session settings", async () => {
+		vi.mocked(loadTeamChatSession).mockResolvedValueOnce({
+			document,
+			snapshot: { ...baseSnapshot, session: { ...baseSession, revision: 2, modelSettings: { modelKey: "agy/opus" } } },
+			sessions: [],
+		});
+		vi.mocked(window.vetta.agentTeams.updateModelSettings).mockImplementationOnce(async (_id, settings) => ({
+			...baseSnapshot,
+			session: { ...baseSession, revision: 3, modelSettings: settings },
+		}));
+		const { result } = renderHook(() => useTeamChatModel(team.id, baseSession.id));
+		await waitFor(() => expect(result.current.model.modelKey).toBe("agy/opus"));
+		await waitFor(() => expect(streamListener).toBeTypeOf("function"));
+
+		// The quota-hit model is replaced while a turn is still settling.
+		await act(async () => result.current.actions.selectModel("openai/gpt-5"));
+		expect(result.current.model.modelKey).toBe("openai/gpt-5");
+		// That turn then reports progress with the session document it started from.
+		act(() =>
+			streamListener?.({
+				type: "session-updated",
+				teamSessionId: baseSession.id,
+				snapshot: {
+					...baseSnapshot,
+					session: { ...baseSession, revision: 2, modelSettings: { modelKey: "agy/opus" } },
+					conversationRevision: 4,
+				},
+			}),
+		);
+		// The composer's model is the one the next send carries.
+		expect(result.current.model.modelKey).toBe("openai/gpt-5");
 	});
 
 	it("does not drop a streamed reply when the snapshot carrying it is rejected as stale", async () => {

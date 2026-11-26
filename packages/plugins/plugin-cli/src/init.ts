@@ -69,7 +69,7 @@ export function initPluginProject(input: InitPluginInput): InitPluginResult {
 				pack: "vetta-plugin pack",
 				validate: "vetta-plugin validate",
 				docs: "vetta-plugin-cli docs",
-				// 一条命令走完「构建 → 打包 → 装进正在运行的 Vetta」。
+				// 一条命令走完「构建 → 打包 → 装进正在运行的 Atrix」。
 				"install:vetta": "vite build && vetta-plugin pack && vetta-plugin-cli add .",
 			},
 			devDependencies: {
@@ -268,7 +268,7 @@ export interface InitHubInput {
 	/** 市场名（slug）。 */
 	readonly name: string;
 	readonly repository: string;
-	/** 本市场的能力所支持的最老 Vetta 版本。 */
+	/** 本市场的能力所支持的最老 Atrix 版本。 */
 	readonly minAppVersion: string;
 }
 

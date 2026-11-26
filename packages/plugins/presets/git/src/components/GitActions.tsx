@@ -1,18 +1,15 @@
 import { useTranslation } from "@vetta-org/plugin-sdk";
-import { Button } from "@vetta-org/ui";
+import { ButtonGroup, ButtonGroupItem } from "@vetta-org/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	aheadBehind,
-	currentBranch,
-	defaultRemote,
-	diffStat,
 	gitFetch,
 	gitPublishBranch,
 	gitPull,
 	gitPush,
 	gitSync,
-	hasUpstream,
 } from "../git/run";
+import { preflightPush } from "../git/publish";
 import { emitRefreshSignal, notifyError, onRefreshSignal } from "../git/runtime";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FetchIcon, PullIcon, PushIcon, SyncIcon } from "./icons";
@@ -33,7 +30,6 @@ interface PendingPublish {
 export function GitActions({ root, labelled = false }: { root: string; labelled?: boolean }): JSX.Element {
 	const { t } = useTranslation();
 	const [ab, setAb] = useState<{ ahead: number; behind: number } | null>(null);
-	const [stat, setStat] = useState({ additions: 0, deletions: 0, untrackedTruncated: false });
 	const [busy, setBusy] = useState<ActionKind | null>(null);
 	const [pendingPublish, setPendingPublish] = useState<PendingPublish | null>(null);
 	// Reloads overlap (refresh signal + post-action), and they finish out of order;
@@ -49,11 +45,6 @@ export function GitActions({ root, labelled = false }: { root: string; labelled?
 			.catch(() => {
 				if (id === reloadIdRef.current) setAb(null);
 			});
-		diffStat(root)
-			.then((value) => {
-				if (id === reloadIdRef.current) setStat(value);
-			})
-			.catch(() => {});
 	}, [root]);
 
 	useEffect(() => {
@@ -85,34 +76,36 @@ export function GitActions({ root, labelled = false }: { root: string; labelled?
 	 * Pushing an unpublished branch: bare `git push` fails outright ("has no
 	 * upstream branch"), which every freshly created branch would hit. Resolve the
 	 * branch + remote and ask, rather than silently writing tracking config.
+	 * The decision itself is shared with the header popover (git/publish.ts).
 	 */
-	const preflightPush = useCallback(async (): Promise<"done" | "deferred"> => {
-		if (await hasUpstream(root)) return "done";
-		const [branch, remote] = await Promise.all([currentBranch(root), defaultRemote(root)]);
-		if (!branch) throw new Error(t("error.detachedHead"));
-		if (!remote) throw new Error(t("error.noRemote"));
-		setPendingPublish({ branch, remote });
-		return "deferred";
+	const ensurePublish = useCallback(async (): Promise<"done" | "deferred"> => {
+		const pre = await preflightPush(root);
+		if (pre.kind === "error") throw new Error(t(pre.key));
+		if (pre.kind === "needs-publish") {
+			setPendingPublish({ branch: pre.branch, remote: pre.remote });
+			return "deferred";
+		}
+		return "done";
 	}, [root, t]);
 
 	const handlePush = useCallback(() => {
 		runAction("push", async () => {
-			const outcome = await preflightPush();
+			const outcome = await ensurePublish();
 			if (outcome !== "done") return outcome;
 			await gitPush(root);
 			return "done";
 		});
-	}, [runAction, preflightPush, root]);
+	}, [runAction, ensurePublish, root]);
 
 	// Syncing an unpublished branch has nothing to pull; publishing IS the sync.
 	const handleSync = useCallback(() => {
 		runAction("sync", async () => {
-			const outcome = await preflightPush();
+			const outcome = await ensurePublish();
 			if (outcome !== "done") return outcome;
 			await gitSync(root);
 			return "done";
 		});
-	}, [runAction, preflightPush, root]);
+	}, [runAction, ensurePublish, root]);
 
 	const confirmPublish = useCallback(() => {
 		const target = pendingPublish;
@@ -168,40 +161,34 @@ export function GitActions({ root, labelled = false }: { root: string; labelled?
 
 	return (
 		<div className="flex items-center gap-2">
-			{/* 一套幽灵按钮走到底：宽面板下多显示一行文案，窄面板下只留图标。 */}
-			<div className="flex items-center gap-0.5">
-				{items.map((item) => (
-					<Button
-						key={item.kind}
-						type="button"
-						variant="ghost"
-						size="xs"
-						className="gap-1 px-1.5"
-						title={item.count ? `${item.title} (${item.count})` : item.title}
-						disabled={busy !== null}
-						onClick={item.onClick}
-					>
-						{item.icon(`h-4 w-4 ${item.count ? (item.tone ?? "") : "text-muted-foreground"} ${spin(item.kind)}`)}
-						{labelled && <span className="text-[12px] font-normal text-foreground">{item.label}</span>}
-						{item.count !== undefined && (
+			{/* 宿主按钮组：宽面板下多显示一行文案，窄面板下只留图标。 */}
+			<ButtonGroup blur={false}>
+				{items.map((item) => {
+					const count =
+						item.count !== undefined ? (
 							<span className={`text-[11px] font-semibold tabular-nums leading-none ${item.tone ?? ""}`}>{item.count}</span>
-						)}
-					</Button>
-				))}
-			</div>
-
-			{stat.additions > 0 && (
-				<span
-					className="text-[11px] font-medium leading-none tabular-nums text-emerald-500/90"
-					title={stat.untrackedTruncated ? t("stat.untrackedTruncated") : undefined}
-				>
-					+{stat.additions}
-					{stat.untrackedTruncated && "+"}
-				</span>
-			)}
-			{stat.deletions > 0 && (
-				<span className="text-[11px] font-medium leading-none tabular-nums text-rose-500/90">−{stat.deletions}</span>
-			)}
+						) : null;
+					const label =
+						labelled || count ? (
+							<span className="inline-flex items-center gap-1">
+								{labelled && <span className="text-[12px] font-normal">{item.label}</span>}
+								{count}
+							</span>
+						) : undefined;
+					return (
+						<ButtonGroupItem
+							key={item.kind}
+							title={item.count ? `${item.title} (${item.count})` : item.title}
+							aria-label={item.title}
+							disabled={busy !== null}
+							onClick={item.onClick}
+							icon={item.icon(`h-4 w-4 ${item.count ? (item.tone ?? "") : "text-muted-foreground"} ${spin(item.kind)}`)}
+							label={label}
+							className={label ? "px-2" : undefined}
+						/>
+					);
+				})}
+			</ButtonGroup>
 
 			<ConfirmDialog
 				open={pendingPublish !== null}

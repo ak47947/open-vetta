@@ -1,5 +1,6 @@
 import type { JSX, ReactNode } from "react";
-import { Switch } from "@vetta-org/ui";
+import { useState } from "react";
+import { Slider, Switch } from "@vetta-org/ui";
 import { SettingRow, SettingSection, type SettingSectionMeta } from "./SettingChrome";
 
 export interface PetDecorationView {
@@ -7,13 +8,6 @@ export interface PetDecorationView {
 	readonly label: string;
 	readonly found: boolean;
 	readonly url: string;
-}
-
-export interface PetBubbleStyleOptionView {
-	readonly id: string;
-	readonly label: string;
-	readonly description: string;
-	readonly decorUrl?: string;
 }
 
 export interface PetSettingsViewLabels {
@@ -26,51 +20,112 @@ export interface PetSettingsViewLabels {
 	readonly alwaysOnTop: string;
 	readonly alwaysOnTopDescription: string;
 	readonly decorationSectionDescription: string;
-	readonly bubbleSectionDescription: string;
 	readonly developerDescription: string;
 	readonly debugFrame: string;
 	readonly debugFrameDescription: string;
+	readonly size: string;
+	readonly sizeDescription: string;
+	readonly autoMode: string;
+	readonly autoModeDescription: string;
+	readonly actionsSectionDescription: string;
 	readonly sections: {
 		readonly display: string;
+		readonly behavior: string;
+		readonly actions: string;
 		readonly decoration: string;
-		readonly bubble: string;
 		readonly developer: string;
 	};
+}
+
+export interface PetSizeControlView {
+	readonly value: number;
+	readonly min: number;
+	readonly max: number;
+	readonly step: number;
+	/** 松手或键盘调整后触发；拖动过程只在本地预览数值。 */
+	readonly onCommit: (value: number) => void;
 }
 
 export interface PetSettingsViewProps {
 	readonly labels: PetSettingsViewLabels;
 	readonly sections: {
 		readonly display: SettingSectionMeta;
+		readonly behavior: SettingSectionMeta;
+		readonly actions: SettingSectionMeta;
 		readonly decoration: SettingSectionMeta;
-		readonly bubble: SettingSectionMeta;
 		readonly developer: SettingSectionMeta;
 	};
 	readonly enabled: boolean;
+	readonly autoMode: boolean;
+	readonly size: PetSizeControlView;
+	/** 动作预览与播放，通常放 `PetActionGalleryView`。 */
+	readonly actionGallery: ReactNode;
 	readonly alwaysOnTop: boolean;
 	readonly debugFrame: boolean;
 	readonly decorations: readonly PetDecorationView[];
 	/** 是否展示「桌宠装饰」分区；组件与数据链路保留，默认 true。 */
 	readonly showDecorationSection?: boolean;
 	readonly aiAssistSlot: ReactNode;
-	readonly bubbleGrid: ReactNode;
 	readonly onChangeEnabled: (value: boolean) => void;
 	readonly onChangeAlwaysOnTop: (value: boolean) => void;
+	readonly onChangeAutoMode: (value: boolean) => void;
 	readonly onChangeDebugFrame: (value: boolean) => void;
+}
+
+function formatPercent(value: number): string {
+	return `${Math.round(value * 100)}%`;
+}
+
+function PetSizeSlider({
+	size,
+	label,
+	disabled,
+}: {
+	size: PetSizeControlView;
+	label: string;
+	disabled: boolean;
+}): JSX.Element {
+	const [draft, setDraft] = useState<number>();
+	const shown = draft ?? size.value;
+	return (
+		<div className="flex w-56 items-center gap-3">
+			<Slider
+				className="flex-1"
+				value={[shown]}
+				min={size.min}
+				max={size.max}
+				step={size.step}
+				disabled={disabled}
+				aria-label={label}
+				aria-valuetext={formatPercent(shown)}
+				onValueChange={([next]) => setDraft(next)}
+				onValueCommit={([next]) => {
+					setDraft(undefined);
+					if (next !== undefined && next !== size.value) size.onCommit(next);
+				}}
+			/>
+			<span className="w-10 shrink-0 text-right text-[12px] tabular-nums text-muted-foreground">
+				{formatPercent(shown)}
+			</span>
+		</div>
+	);
 }
 
 export function PetSettingsView({
 	labels,
 	sections,
 	enabled,
+	autoMode,
+	size,
+	actionGallery,
 	alwaysOnTop,
 	debugFrame,
 	decorations,
 	showDecorationSection = true,
 	aiAssistSlot,
-	bubbleGrid,
 	onChangeEnabled,
 	onChangeAlwaysOnTop,
+	onChangeAutoMode,
 	onChangeDebugFrame,
 }: PetSettingsViewProps): JSX.Element {
 	return (
@@ -84,13 +139,30 @@ export function PetSettingsView({
 				<SettingRow title={labels.showPet} description={labels.showPetDescription}>
 					<Switch checked={enabled} onCheckedChange={onChangeEnabled} />
 				</SettingRow>
-				<SettingRow title={labels.alwaysOnTop} description={labels.alwaysOnTopDescription} border={false}>
+				<SettingRow title={labels.alwaysOnTop} description={labels.alwaysOnTopDescription}>
 					<Switch
 						checked={alwaysOnTop}
 						onCheckedChange={onChangeAlwaysOnTop}
 						disabled={!enabled}
 					/>
 				</SettingRow>
+				<SettingRow title={labels.size} description={labels.sizeDescription} border={false}>
+					<PetSizeSlider size={size} label={labels.size} disabled={!enabled} />
+				</SettingRow>
+			</SettingSection>
+
+			<SettingSection title={labels.sections.behavior} section={sections.behavior}>
+				<SettingRow title={labels.autoMode} description={labels.autoModeDescription} border={false}>
+					<Switch checked={autoMode} onCheckedChange={onChangeAutoMode} disabled={!enabled} />
+				</SettingRow>
+			</SettingSection>
+
+			<SettingSection
+				title={labels.sections.actions}
+				section={sections.actions}
+				description={labels.actionsSectionDescription}
+			>
+				{actionGallery}
 			</SettingSection>
 
 			{showDecorationSection && (
@@ -134,14 +206,6 @@ export function PetSettingsView({
 					</div>
 				</SettingSection>
 			)}
-
-			<SettingSection
-				title={labels.sections.bubble}
-				section={sections.bubble}
-				description={labels.bubbleSectionDescription}
-			>
-				{bubbleGrid}
-			</SettingSection>
 
 			<SettingSection
 				title={labels.sections.developer}

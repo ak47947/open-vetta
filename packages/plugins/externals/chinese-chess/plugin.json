@@ -15,9 +15,8 @@
 		"ui.slot.workspace-view",
 		"storage.read",
 		"storage.write",
-		"ai.complete",
-		"ai.models.list"
+		"ai.complete"
 	],
 	"description": "%plugin.description%",
-	"author": "Vetta"
+	"author": "Atrix"
 }

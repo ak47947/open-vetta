@@ -152,8 +152,8 @@ export {
 	type DocToPdfToolOptions,
 } from "./tools/doc-to-pdf/index.js";
 export {
-	type AnchorEditInput,
-	AnchorEditInputSchema,
+	type BlockEditInput,
+	BlockEditInputSchema,
 	createEditTool,
 	createEditToolRegistration,
 	EDIT_TOOL_DESCRIPTION,
@@ -210,14 +210,6 @@ export {
 	GrepToolInputSchema,
 	type GrepToolOptions,
 } from "./tools/grep/index.js";
-export {
-	createHtmlToPdfTool,
-	createHtmlToPdfToolRegistration,
-	HTML_TO_PDF_TOOL_DESCRIPTION,
-	type HtmlToPdfToolInput,
-	HtmlToPdfToolInputSchema,
-	type HtmlToPdfToolOptions,
-} from "./tools/html-to-pdf/index.js";
 export {
 	createLsTool,
 	createLsToolRegistration,

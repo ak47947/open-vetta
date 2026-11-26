@@ -250,7 +250,7 @@ final class VettaUITests: XCTestCase {
 		app.buttons["session.s-docs"].tap()
 		let field = composerField(app)
 		XCTAssertTrue(field.waitForExistence(timeout: 10))
-		XCTAssertEqual(field.placeholderValue, "指示 Vetta 或按住说话…")
+		XCTAssertEqual(field.placeholderValue, "指示 Atrix 或按住说话…")
 		let attach = app.buttons["composer.attach"].frame
 		let box = app.descendants(matching: .any)["composer.box"].frame
 		XCTAssertEqual(attach.height, box.height, accuracy: 0.5, "the attach button and a one-line field are the same height")

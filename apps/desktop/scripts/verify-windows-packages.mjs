@@ -6,11 +6,19 @@ import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { parse } from "yaml";
-import { windowsSupplementalArtifactNames } from "./windows-packaging-contract.mjs";
+import {
+	WINDOWS_LEGACY_PRODUCT_NAMES,
+	WINDOWS_PRODUCT_NAME,
+	windowsSupplementalArtifactNames,
+} from "./windows-packaging-contract.mjs";
 
 const execFileAsync = promisify(execFile);
 const packageDir = resolve(import.meta.dirname, "..");
 const defaultReleaseDir = join(packageDir, "release");
+
+function executableCandidates(root) {
+	return [WINDOWS_PRODUCT_NAME, ...WINDOWS_LEGACY_PRODUCT_NAMES].map((name) => join(root, `${name}.exe`));
+}
 
 async function assertNonEmptyFile(filePath) {
 	const info = await stat(filePath);
@@ -36,13 +44,10 @@ async function isValidLayoutRoot(root, expectedVersion) {
 	try {
 		const manifest = JSON.parse(await readFile(join(root, "current.json"), "utf8"));
 		if (manifest?.version !== expectedVersion) return false;
-		const launcherPath = [join(root, "Atrix.exe"), join(root, "Vetta.exe")].find((candidate) =>
+		const launcherPath = executableCandidates(root).find((candidate) => existsSync(candidate));
+		const appPath = executableCandidates(join(root, "versions", expectedVersion)).find((candidate) =>
 			existsSync(candidate),
 		);
-		const appPath = [
-			join(root, "versions", expectedVersion, "Atrix.exe"),
-			join(root, "versions", expectedVersion, "Vetta.exe"),
-		].find((candidate) => existsSync(candidate));
 		if (!launcherPath || !appPath) return false;
 		await Promise.all([
 			assertNonEmptyFile(launcherPath),
@@ -55,14 +60,12 @@ async function isValidLayoutRoot(root, expectedVersion) {
 	}
 }
 
-export function resolveSupplementalArtifactNames(releaseDir, expectedVersion) {
-	for (const productName of ["Atrix", "Vetta"]) {
-		const names = windowsSupplementalArtifactNames(expectedVersion, productName);
-		if (existsSync(join(releaseDir, names[0])) && existsSync(join(releaseDir, names[1]))) {
-			return names;
-		}
+export function resolveSupplementalArtifactNames(releaseDir, expectedVersion, arch = process.arch) {
+	for (const productName of [WINDOWS_PRODUCT_NAME, ...WINDOWS_LEGACY_PRODUCT_NAMES]) {
+		const names = windowsSupplementalArtifactNames(expectedVersion, arch, productName);
+		if (names.every((name) => existsSync(join(releaseDir, name)))) return names;
 	}
-	return windowsSupplementalArtifactNames(expectedVersion, "Atrix");
+	return windowsSupplementalArtifactNames(expectedVersion, arch);
 }
 
 export async function verifyExtractedWindowsLayout(root, expectedVersion) {

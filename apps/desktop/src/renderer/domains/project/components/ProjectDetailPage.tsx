@@ -1,4 +1,4 @@
-import { CurrentScenarioActivityPanel } from "@domains/activity-panel/components/ActivityPanel";
+import { ActivityPanel } from "@domains/activity-panel/components/ActivityPanel";
 import { ProjectDetailPageView } from "@vetta-org/theme-ui/project";
 import { motion } from "motion/react";
 import { BatchQueueStatus } from "./BatchQueueStatus";
@@ -41,7 +41,8 @@ function ProjectDetailPageContent(): JSX.Element {
 		<ProjectDetailPageView
 			activityOpen={model.activityOpen}
 			activityPanel={
-				<CurrentScenarioActivityPanel
+				<ActivityPanel
+					pluginScenario={model.activityPanelScenario}
 					workspace={createActivityWorkspace(model.decodedCwd, model.decodedCwd, activeRuntimeIds)}
 				/>
 			}
@@ -67,6 +68,7 @@ function ProjectDetailPageContent(): JSX.Element {
 			saveStatus={model.saveStatus}
 			sessionCountLabel={model.sessionCountLabel}
 			recentSessions={model.recentSessions}
+			automations={model.automations}
 			runningSessionCount={model.runningSessionCount}
 			runningTaskCount={model.runningTaskCount}
 			activeDocument={model.activeDocument}
@@ -75,6 +77,8 @@ function ProjectDetailPageContent(): JSX.Element {
 			theme={model.theme}
 			onDocumentChange={model.onDocumentChange}
 			onOpenRecentSession={model.onOpenRecentSession}
+			onOpenAutomation={model.onOpenAutomation}
+			onOpenAllAutomations={model.onOpenAllAutomations}
 			taskCountLabel={model.taskCountLabel}
 			textareaRef={model.textareaRef}
 		/>

@@ -3,6 +3,8 @@ import { ProjectContextMenuView } from "@vetta-org/theme-ui/project/ProjectConte
 import { createPortal } from "react-dom";
 import { useProjectContextMenuModel } from "../hooks/useProjectContextMenuModel";
 
+import { useMoveSpaceMenu } from "../hooks/useMoveSpaceMenu";
+
 interface ProjectContextMenuProps {
 	x: number;
 	y: number;
@@ -10,6 +12,7 @@ interface ProjectContextMenuProps {
 	onClose: () => void;
 	onArchive: (cwd: string) => void;
 	onRemove: (cwd: string) => void;
+	onManageSessions?: (project: Project) => void;
 	defaultScope?: "conversation" | "claw";
 	onClearConversation?: (cwd: string) => void;
 	onClearClaw?: (cwd: string) => void;
@@ -25,6 +28,7 @@ export function ProjectContextMenu({
 	onClose,
 	onArchive,
 	onRemove,
+	onManageSessions,
 	defaultScope,
 	onClearConversation,
 	onClearClaw,
@@ -37,6 +41,7 @@ export function ProjectContextMenu({
 		onClose,
 		onArchive,
 		onRemove,
+		onManageSessions,
 		defaultScope,
 		onClearConversation,
 		onClearClaw,
@@ -44,5 +49,6 @@ export function ProjectContextMenu({
 		clearConversationDisabled,
 		clearClawDisabled,
 	});
-	return createPortal(<ProjectContextMenuView {...model} x={x} y={y} />, document.body);
+	const move = useMoveSpaceMenu(!project.isDefault && project.type !== "batch" ? { kind: "project", key: project.cwd } : undefined, onClose);
+	return createPortal(<ProjectContextMenuView {...model} extraItems={move ? [move] : undefined} x={x} y={y} />, document.body);
 }

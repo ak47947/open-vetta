@@ -5,6 +5,7 @@ import type { DesktopApi } from "./api.js";
 import { createAbilitiesApi } from "./apis/abilities.js";
 import { createActionApprovalApi } from "./apis/action-approval.js";
 import { createAgentTeamsApi } from "./apis/agent-teams.js";
+import { createAppIconApi } from "./apis/app-icon.js";
 import { createAppLifecycleApi } from "./apis/app-lifecycle.js";
 import { createAppMonitorApi } from "./apis/app-monitor.js";
 import { createAppshotApi } from "./apis/appshot.js";
@@ -18,7 +19,6 @@ import { createNotificationApi } from "./apis/notification.js";
 import { createPetApi } from "./apis/pet.js";
 import { createPluginsApi } from "./apis/plugins.js";
 import { createProjectApi } from "./apis/project.js";
-import { createQuickPanelApi } from "./apis/quick-panel.js";
 import { createRemotePairingApi } from "./apis/remote-pairing.js";
 import { createRuntimeConfigurationApi } from "./apis/runtime-configuration.js";
 import { createSchedulerApi } from "./apis/scheduler.js";
@@ -30,6 +30,7 @@ import { createSystemApi } from "./apis/system.js";
 import { createTelemetryApi } from "./apis/telemetry.js";
 import { createTerminalApi } from "./apis/terminal.js";
 import { createThemesApi } from "./apis/themes.js";
+import { createUiZoomApi } from "./apis/ui-zoom.js";
 import { createWebhookApi } from "./apis/webhook.js";
 import { createHostAccessGate } from "./host-access.js";
 import { createUserActivityReporter, USER_ACTIVITY_CHANNEL } from "./user-activity.js";
@@ -64,11 +65,12 @@ const rawApi: Omit<DesktopApi, "hostAccess"> = {
 	...createProjectApi(ipcRenderer),
 	...createSshApi(ipcRenderer),
 	...createTerminalApi(ipcRenderer),
-	...createQuickPanelApi(ipcRenderer),
 	...createRuntimeConfigurationApi(ipcRenderer),
 	remotePairing: createRemotePairingApi(ipcRenderer),
 	...createAppshotApi(ipcRenderer),
 	...createI18nApi(ipcRenderer),
+	...createUiZoomApi(ipcRenderer),
+	...createAppIconApi(ipcRenderer),
 	...createTelemetryApi(ipcRenderer),
 	...createSystemApi(ipcRenderer, webUtils),
 };

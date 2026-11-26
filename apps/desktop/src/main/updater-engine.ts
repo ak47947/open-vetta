@@ -3,8 +3,10 @@ import { join } from "node:path";
 import type { ProgressInfo, UpdateInfo } from "builder-util-runtime";
 import { CancellationToken, CURRENT_APP_INSTALLER_FILE_NAME } from "builder-util-runtime";
 import type { AppUpdater, ResolvedUpdateFileInfo } from "electron-updater";
-
+import { stripReleaseNoteHeader } from "../shared/release-note-header.js";
+import { type ReleaseNoteLanguage, selectReleaseNoteLanguage } from "../shared/release-note-language.js";
 import type { InnoWindowsUpdateController } from "./inno-windows-update.js";
+import { releaseNotesHtmlToMarkdown } from "./release-notes-markdown.js";
 
 export interface UpdateEngineInfo {
 	version: string;
@@ -86,14 +88,25 @@ async function promoteDownloadedInstaller(updater: AppUpdater, installerPath: st
 	}
 }
 
-function normalizeReleaseNotes(releaseNotes: UpdateInfo["releaseNotes"]): string | undefined {
-	if (typeof releaseNotes === "string") return releaseNotes || undefined;
+function normalizeReleaseNotes(
+	releaseNotes: UpdateInfo["releaseNotes"],
+	language: ReleaseNoteLanguage,
+): string | undefined {
+	// 双语说明只留界面语言那一段；标题先保留，单版本时下面再统一去掉。
+	const toMarkdown = (note: string) => selectReleaseNoteLanguage(releaseNotesHtmlToMarkdown(note), language);
+	if (typeof releaseNotes === "string") return stripReleaseNoteHeader(toMarkdown(releaseNotes)) || undefined;
 	if (!Array.isArray(releaseNotes)) return undefined;
 
 	const notes = releaseNotes
 		.map((item) => item.note)
-		.filter((note): note is string => typeof note === "string" && note.length > 0);
-	return notes.length > 0 ? notes.join("\n\n") : undefined;
+		.filter((note): note is string => typeof note === "string" && note.length > 0)
+		.map(toMarkdown)
+		.filter((note) => note.length > 0);
+	if (notes.length === 0) return undefined;
+	// 单个版本：对话框已有版本标题，去掉正文开头的「# Vetta x.y.z」。
+	// 跨多个版本时各段的标题是区分版本的唯一线索，原样保留。
+	if (notes.length === 1) return stripReleaseNoteHeader(notes[0] ?? "") || undefined;
+	return notes.join("\n\n");
 }
 
 function getAssetFileName(url: string): string | undefined {
@@ -107,11 +120,11 @@ function getAssetFileName(url: string): string | undefined {
 	}
 }
 
-function mapUpdateInfo(info: UpdateInfo): UpdateEngineInfo {
+function mapUpdateInfo(info: UpdateInfo, language: ReleaseNoteLanguage): UpdateEngineInfo {
 	const file = info.files[0];
 	return {
 		version: info.version,
-		releaseNote: normalizeReleaseNotes(info.releaseNotes),
+		releaseNote: normalizeReleaseNotes(info.releaseNotes, language),
 		assetFileName: file ? getAssetFileName(file.url) : undefined,
 		totalBytes: file?.size,
 	};
@@ -150,6 +163,8 @@ export class ElectronUpdaterEngine implements UpdateEngine {
 		private readonly innoWindowsUpdate?: InnoWindowsUpdateController,
 		private readonly nativeMacUpdateEvents?: NativeMacUpdateEvents,
 		private readonly quitHooks: UpdateEngineQuitHooks = {},
+		// 发布说明是双语的：GitHub 上两段同现，应用内只显示界面语言对应的一段。
+		private readonly getLanguage: () => ReleaseNoteLanguage = () => "en",
 	) {
 		this.updater.autoDownload = false;
 		this.updater.autoInstallOnAppQuit = !innoWindowsUpdate;
@@ -175,7 +190,7 @@ export class ElectronUpdaterEngine implements UpdateEngine {
 	async checkForUpdates(): Promise<UpdateEngineCheckResult | null> {
 		const result = await this.updater.checkForUpdates();
 		if (!result) return null;
-		const info = mapUpdateInfo(result.updateInfo);
+		const info = mapUpdateInfo(result.updateInfo, this.getLanguage());
 		const innoAsset = result.isUpdateAvailable
 			? this.innoWindowsUpdate?.select(result.updateInfo, resolveUpdateFiles(this.updater, result.updateInfo))
 			: null;

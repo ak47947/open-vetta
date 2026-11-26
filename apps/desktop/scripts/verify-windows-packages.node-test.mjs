@@ -25,7 +25,11 @@ test("Windows supplemental package names are stable and versioned", () => {
 		"Atrix-1.2.3-win-x64.msi",
 		"Atrix-1.2.3-win-x64.zip",
 	]);
-	assert.deepEqual(windowsSupplementalArtifactNames("1.2.3", "Vetta"), [
+	assert.deepEqual(windowsSupplementalArtifactNames("1.2.3", "arm64"), [
+		"Atrix-1.2.3-win-arm64.msi",
+		"Atrix-1.2.3-win-arm64.zip",
+	]);
+	assert.deepEqual(windowsSupplementalArtifactNames("1.2.3", "x64", "Vetta"), [
 		"Vetta-1.2.3-win-x64.msi",
 		"Vetta-1.2.3-win-x64.zip",
 	]);

@@ -116,8 +116,11 @@ export {
 export {
 	DOMAIN_MCP_CAPABILITIES,
 	DOMAIN_MCP_CAPABILITY_CATALOG,
+	MCP_SCOPES,
 	MCP_SERVER_TYPES,
 	type McpHttpServerUpsertData,
+	type McpListInput,
+	type McpScope,
 	type McpServerDetail,
 	type McpServerNameInput,
 	type McpServerSetEnabledInput,
@@ -126,6 +129,7 @@ export {
 	type McpServerUpsertData,
 	type McpServerUpsertInput,
 	type McpStdioServerUpsertData,
+	type McpTarget,
 } from "./domain/mcp.js";
 export {
 	DOMAIN_MEDIA_CAPABILITIES,
@@ -253,17 +257,8 @@ export {
 	type SessionRuntimeProject,
 } from "./domain/session.js";
 export {
-	DOMAIN_QUICK_PANEL_CAPABILITIES,
-	DOMAIN_QUICK_PANEL_CAPABILITY_CATALOG,
 	DOMAIN_SHORTCUT_CAPABILITIES,
 	DOMAIN_SHORTCUT_CAPABILITY_CATALOG,
-	QUICK_PANEL_POST_SEND_BEHAVIORS,
-	QUICK_PANEL_TRIGGERS,
-	type QuickPanelPostSendBehavior,
-	type QuickPanelPostSendBehaviorInput,
-	type QuickPanelSettings,
-	type QuickPanelTrigger,
-	type QuickPanelTriggerInput,
 	type ShortcutActionInput,
 	type ShortcutBinding,
 	type ShortcutBindingInput,

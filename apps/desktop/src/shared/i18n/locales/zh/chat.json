@@ -26,6 +26,11 @@
 		}
 	},
 	"markdown": {
+		"fileMissing": "文件不存在：{{path}}",
+		"openFile": "打开",
+		"revealInFinder": "在访达中显示",
+		"revealInExplorer": "在资源管理器中显示",
+		"revealInFileManager": "在文件管理器中显示",
 		"preview": "预览",
 		"source": "源码",
 		"run": "在独立窗口运行",
@@ -41,6 +46,7 @@
 		"loading": "正在生成预览…",
 		"retry": "重试",
 		"enlarge": "放大",
+		"copyImage": "复制图片",
 		"save": "另存为",
 		"diagram": "图表",
 		"imageFailed": "图片加载失败。",
@@ -238,6 +244,7 @@
 		"refresh": "刷新",
 		"newFile": "新建文件",
 		"newFolder": "新建文件夹",
+		"newMenu": "新建",
 		"collapseAll": "全部折叠",
 		"newFileInputLabel": "输入新文件名称",
 		"newFolderInputLabel": "输入新文件夹名称",
@@ -309,6 +316,7 @@
 		"download": "下载文件",
 		"showTree": "显示文件树",
 		"hideTree": "隐藏文件树",
+		"locate": "在文件树中定位",
 		"previous": "上一个 (←)",
 		"next": "下一个 (→)",
 		"downloadShort": "下载",
@@ -337,10 +345,12 @@
 		"selectPlaceholder": "请选择"
 	},
 	"atPanel": {
+		"citeDirectory": "引用目录",
+		"citeDirectoryHint": "引用此目录（{{shortcut}}）",
 		"emptyDirectory": "空目录",
 		"enterDirectory": "Tab 进入",
 		"goUp": "..",
-		"header": "引用文件",
+		"header": "引用文件或目录",
 		"loading": "加载中...",
 		"noResults": "未找到匹配项",
 		"searchResults": "{{count}} 个结果"
@@ -446,7 +456,16 @@
 			"pinned": "取消窗口置顶",
 			"unpinned": "窗口置顶（钉在屏幕上）"
 		},
-		"remoteBadge": "远程"
+		"remoteBadge": "远程",
+		"headerActions": {
+			"customize": "自定义顶栏",
+			"topFull": "顶栏已满",
+			"moveToTop": "放到顶栏",
+			"moveToTray": "收纳",
+			"adjust": "调整",
+			"done": "完成",
+			"more": "更多操作"
+		}
 	},
 	"contextRing": {
 		"tooltip": {
@@ -536,8 +555,7 @@
 	},
 	"guideBadgeSwiper": {
 		"dismissTooltip": "不再提示",
-		"petFeatureText": "新增桌宠功能，点击前往设置开启",
-		"quickPanelText": "Atrix 支持快捷面板，点击前往设置开启"
+		"petFeatureText": "新增桌宠功能，点击前往设置开启"
 	},
 	"imagePreview": {
 		"altText": "读取的图片",
@@ -597,7 +615,7 @@
 				"粘贴截图或 @ 引用文件，直接开始"
 			],
 			"noSession": "选择或创建会话以开始",
-			"suggestion": "↵ {{suggestion}}",
+			"suggestion": "Tab ⇥  {{suggestion}}",
 			"thinking": "Atrix 正在思考…"
 		},
 		"mention": {
@@ -860,8 +878,9 @@
 		},
 		"edit": {
 			"pendingHint": "正在编辑最后一条消息，发送后将替换原消息和回复",
+			"pendingBranchHint": "正在编辑较早的消息，发送后从这里重新回答，原来的后续对话保留为另一个版本",
 			"overwriteDraftTitle": "覆盖当前输入？",
-			"overwriteDraftBody": "输入框中已有内容。继续编辑最后一条消息将覆盖当前草稿。",
+			"overwriteDraftBody": "输入框中已有内容。继续编辑这条消息将覆盖当前草稿。",
 			"overwriteDraftConfirm": "覆盖并编辑"
 		},
 		"interrupt": {
@@ -891,7 +910,7 @@
 	"modelSelector": {
 		"defaultBadge": "默认",
 		"selectModel": "选择模型",
-		"visionBadge": "vision"
+		"visionBadge": "支持图片输入"
 	},
 	"newSession": {
 		"greetingDefault": "今天怎么样？",
@@ -995,6 +1014,8 @@
 		}
 	},
 	"questionPanel": {
+		"collapse": "收起面板",
+		"expand": "展开面板",
 		"keyboardHint": "↑↓ 选择 · 空格选中 · ←→ 切换 · Enter 下一题",
 		"multiSelectHint": "可多选",
 		"otherOption": "其它（自定义输入）",
@@ -1078,6 +1099,7 @@
 		"emptyNoMatchHint": "换个关键词试试，或直接输入你的需求。",
 		"emptyNoSkills": "暂无可用的技能",
 		"emptyNoSkillsHint": "去能力广场安装技能后，这里就能直接调用。",
+		"moreActions": "更多动作",
 		"header": "选择技能",
 		"resultCount": "{{count}} 个结果",
 		"skillsSection": "技能",
